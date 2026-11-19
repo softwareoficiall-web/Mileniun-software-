@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mileniun Smart - Gestão & Ordem de Serviço</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .card-shadow {
+      box-shadow: 0 4px 20px -2px rgba(88, 28, 135, 0.06);
+    }
+
+    /* Estilos da Folha A4 (Oculta na tela normal, renderizada para captura/impressão) */
+    #areaImpressaoWrapper {
+      position: fixed;
+      left: -9999px;
+      top: 0;
+      z-index: -1;
+    }
+
+    .folha-a4 {
+      width: 794px; /* 210mm em 96dpi */
+      min-height: 1123px; /* 297mm em 96dpi */
+      background: #ffffff;
+      color: #000000;
+      padding: 36px 42px;
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #areaImpressaoWrapper, #areaImpressaoWrapper * {
+        visibility: visible;
+      }
+      #areaImpressaoWrapper {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+      }
+      .folha-a4 {
+        width: 100%;
+        min-height: auto;
+        padding: 10mm;
+      }
+    }
+  </style>
+</head>
+<body class="pb-14">
+
+  <!-- Cabeçalho -->
+  <header class="bg-purple-700 text-white pt-6 pb-8 px-4 rounded-b-3xl shadow-md">
+    <div class="max-w-3xl mx-auto flex justify-between items-center">
+      <div>
+        <h1 class="text-xl font-bold tracking-tight">Mileniun Smart</h1>
+        <p class="text-purple-200 text-xs mt-0.5">Controle Financeiro & Ordem de Serviço</p>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="abrirConfigLoja()" class="bg-purple-800/70 hover:bg-purple-800 text-xs font-medium px-3 py-2 rounded-xl border border-purple-500/30 transition">
+          Dados da Loja
+        </button>
+        <button onclick="exportarBackup()" class="bg-purple-800/70 hover:bg-purple-800 text-xs font-medium px-3 py-2 rounded-xl border border-purple-500/30 transition">
+          Backup
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-4 -mt-5 space-y-5">
+
+    <!-- Filtros de Período -->
+    <section class="bg-white p-4 rounded-2xl card-shadow border border-slate-100">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Filtrar Período</span>
+        <div class="flex gap-1.5">
+          <button onclick="setFiltroRapido('hoje')" class="text-xs bg-purple-50 text-purple-700 font-medium px-2.5 py-1 rounded-lg hover:bg-purple-100 transition">Hoje</button>
+          <button onclick="setFiltroRapido('mes')" class="text-xs bg-purple-50 text-purple-700 font-medium px-2.5 py-1 rounded-lg hover:bg-purple-100 transition">Este Mês</button>
+          <button onclick="setFiltroRapido('todos')" class="text-xs bg-slate-100 text-slate-600 font-medium px-2.5 py-1 rounded-lg hover:bg-slate-200 transition">Tudo</button>
+        </div>
+      </div>
+      <div class="grid grid-cols-3 gap-2">
+        <div>
+          <label class="block text-[11px] text-slate-500 mb-1">Ano</label>
+          <select id="filtroAno" onchange="atualizarTela()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-sm focus:outline-none focus:border-purple-600"></select>
+        </div>
+        <div>
+          <label class="block text-[11px] text-slate-500 mb-1">Mês</label>
+          <select id="filtroMes" onchange="atualizarTela()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-sm focus:outline-none focus:border-purple-600">
+            <option value="todos">Todos</option>
+            <option value="01">Janeiro</option>
+            <option value="02">Fevereiro</option>
+            <option value="03">Março</option>
+            <option value="04">Abril</option>
+            <option value="05">Maio</option>
+            <option value="06">Junho</option>
+            <option value="07">Julho</option>
+            <option value="08">Agosto</option>
+            <option value="09">Setembro</option>
+            <option value="10">Outubro</option>
+            <option value="11">Novembro</option>
+            <option value="12">Dezembro</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[11px] text-slate-500 mb-1">Dia Específico</label>
+          <input type="date" id="filtroDia" onchange="aplicarFiltroDia()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 text-sm focus:outline-none focus:border-purple-600" />
+        </div>
+      </div>
+    </section>
+
+    <!-- Resumo Financeiro -->
+    <section class="grid grid-cols-3 gap-3">
+      <div class="bg-white p-4 rounded-2xl card-shadow border border-slate-100">
+        <span class="text-xs text-slate-500 block">Faturamento</span>
+        <strong id="resumoFaturamento" class="text-base sm:text-lg font-bold text-slate-800 mt-1 block">R$ 0,00</strong>
+      </div>
+      <div class="bg-white p-4 rounded-2xl card-shadow border border-slate-100">
+        <span class="text-xs text-slate-500 block">Custo Peças</span>
+        <strong id="resumoCusto" class="text-base sm:text-lg font-bold text-rose-600 mt-1 block">R$ 0,00</strong>
+      </div>
+      <div class="bg-purple-50 p-4 rounded-2xl card-shadow border border-purple-100">
+        <span class="text-xs text-purple-700 font-medium block">Lucro Líquido</span>
+        <strong id="resumoLucro" class="text-base sm:text-lg font-bold text-purple-800 mt-1 block">R$ 0,00</strong>
+      </div>
+    </section>
+
+    <!-- Meta Mensal e Previsão de Serviços -->
+    <section class="bg-white p-5 rounded-2xl card-shadow border border-slate-100">
+      <div class="flex flex-wrap justify-between items-start gap-3 mb-4">
+        <div>
+          <h2 class="text-sm font-bold text-slate-800">Meta de Lucro Mensal</h2>
+          <p class="text-xs text-slate-500">Simule quantos serviços faltam</p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <div>
+            <label class="block text-[10px] text-slate-400 uppercase font-semibold mb-0.5 text-right">Meta (R$)</label>
+            <input type="number" id="inputMeta" step="50" placeholder="3000" onchange="salvarConfigMeta()" class="w-24 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-sm font-semibold text-purple-700 text-right focus:outline-none focus:border-purple-600" />
+          </div>
+          <div>
+            <label class="block text-[10px] text-slate-400 uppercase font-semibold mb-0.5 text-right">Lucro/Serviço</label>
+            <input type="number" id="inputLucroMedio" step="10" placeholder="Auto" oninput="salvarConfigMeta()" class="w-24 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-sm font-semibold text-slate-700 text-right focus:outline-none focus:border-purple-600" />
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between gap-2 mb-3 bg-slate-50 p-2 rounded-xl border border-slate-100">
+        <span class="text-[11px] text-slate-500 font-medium">Base de cálculo:</span>
+        <div class="flex gap-1">
+          <button type="button" onclick="usarLucroAutomatico()" id="btnModoAuto" class="text-[11px] px-2.5 py-1 rounded-lg font-medium transition bg-purple-700 text-white">Automático</button>
+          <button type="button" onclick="definirLucroRapido(80)" class="text-[11px] px-2 py-1 rounded-lg font-medium bg-white border border-slate-200 text-slate-600 hover:border-purple-400">R$ 80</button>
+          <button type="button" onclick="definirLucroRapido(120)" class="text-[11px] px-2 py-1 rounded-lg font-medium bg-white border border-slate-200 text-slate-600 hover:border-purple-400">R$ 120</button>
+          <button type="button" onclick="definirLucroRapido(150)" class="text-[11px] px-2 py-1 rounded-lg font-medium bg-white border border-slate-200 text-slate-600 hover:border-purple-400">R$ 150</button>
+        </div>
+      </div>
+
+      <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden mb-2">
+        <div id="barraProgresso" class="bg-purple-600 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+      </div>
+      <div class="flex justify-between text-xs font-medium mb-4">
+        <span id="textoProgresso" class="text-purple-700">0% atingido</span>
+        <span id="textoFalta" class="text-slate-500">Faltam R$ 0,00</span>
+      </div>
+
+      <div id="boxPrevisao" class="bg-purple-50/70 border border-purple-100 rounded-xl p-3.5 text-xs text-slate-700 leading-relaxed">
+        Adicione serviços ou escolha um lucro médio acima para simular.
+      </div>
+    </section>
+
+    <!-- Formulário de Novo Serviço + Ordem de Serviço -->
+    <section class="bg-white p-5 rounded-2xl card-shadow border border-slate-100">
+      <div class="flex justify-between items-center mb-3">
+        <h2 class="text-sm font-bold text-slate-800">Registrar Serviço & Gerar O.S.</h2>
+        <span class="text-[11px] bg-purple-50 text-purple-700 font-semibold px-2.5 py-0.5 rounded-full">O.S. #<span id="proximoNumeroOS">001</span></span>
+      </div>
+
+      <form id="formServico" onsubmit="adicionarServico(event)" class="space-y-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">Nome do Cliente *</label>
+            <input type="text" id="cliente" required placeholder="Ex: João da Silva" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-purple-600" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">WhatsApp / Telefone</label>
+            <input type="tel" id="telefoneCliente" placeholder="Ex: (82) 99999-9999" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-purple-600" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">Aparelho & Serviço Realizado *</label>
+          <input type="text" id="descricao" required placeholder="Ex: Galaxy A16 - Troca de Frontal" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-purple-600" />
+        </div>
+
+        <!-- Tipo de Senha do Aparelho -->
+        <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <label class="text-xs font-semibold text-slate-700">Senha de Desbloqueio do Aparelho</label>
+            <div class="flex gap-1.5">
+              <button type="button" onclick="alternarTipoSenha('texto')" id="btnSenhaTexto" class="text-xs px-3 py-1 rounded-lg font-medium transition bg-purple-700 text-white">
+                PIN / Senha Texto
+              </button>
+              <button type="button" onclick="alternarTipoSenha('padrao')" id="btnSenhaPadrao" class="text-xs px-3 py-1 rounded-lg font-medium transition bg-white border border-slate-200 text-slate-600 hover:border-purple-400">
+                ● Padrão (Bolinhas)
+              </button>
+              <button type="button" onclick="alternarTipoSenha('nenhuma')" id="btnSenhaNenhuma" class="text-xs px-3 py-1 rounded-lg font-medium transition bg-white border border-slate-200 text-slate-600 hover:border-purple-400">
+                Sem Senha
+              </button>
+            </div>
+          </div>
+
+          <!-- Campo Senha Texto/PIN -->
+          <div id="boxSenhaTexto">
+            <input type="text" id="senhaAparelho" placeholder="Digite o PIN, senha numérica ou observação..." class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-purple-600" />
+          </div>
+
+          <!-- Grade de Bolinhas para Desenhar Padrão -->
+          <div id="boxSenhaPadrao" class="hidden flex flex-col items-center py-2">
+            <p class="text-[11px] text-slate-500 mb-2">Arraste ou clique nas bolinhas na ordem do padrão:</p>
+            <canvas id="canvasPadrao" width="210" height="210" class="bg-white border-2 border-purple-200 rounded-2xl touch-none shadow-xs cursor-crosshair"></canvas>
+            <div class="flex items-center justify-between w-full max-w-[210px] mt-2">
+              <span id="textoSequenciaPadrao" class="text-[11px] font-mono text-purple-700 font-semibold">Sequência: —</span>
+              <button type="button" onclick="limparPadrao()" class="text-xs text-rose-600 hover:underline font-medium">Limpar</button>
+            </div>
+          </div>
+
+          <div id="boxSenhaNenhuma" class="hidden text-xs text-slate-400 italic">
+            Aparelho sem senha de bloqueio.
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">Valor Cobrado *</label>
+            <input type="number" id="valorCobrado" step="0.01" min="0" required placeholder="250.00" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-purple-600" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">Custo Peça *</label>
+            <input type="number" id="custoPeca" step="0.01" min="0" required placeholder="90.00" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-purple-600" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">Garantia</label>
+            <select id="garantia" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2.5 text-sm focus:outline-none focus:border-purple-600">
+              <option value="90 dias">90 dias (3 meses)</option>
+              <option value="30 dias">30 dias</option>
+              <option value="60 dias">60 dias</option>
+              <option value="6 meses">6 meses</option>
+              <option value="Sem garantia">Sem garantia</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">Data *</label>
+            <input type="date" id="dataServico" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2.5 text-sm focus:outline-none focus:border-purple-600" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">Observações / Estado do Aparelho (Opcional)</label>
+          <input type="text" id="observacoes" placeholder="Ex: Aparelho entrou com tampa traseira riscada e sem chip." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-purple-600" />
+        </div>
+
+        <button type="submit" class="w-full bg-purple-700 hover:bg-purple-800 text-white font-semibold py-3 rounded-xl text-sm shadow-sm transition active:scale-[0.99]">
+          + Salvar Serviço e Gerar Ordem de Serviço
+        </button>
+      </form>
+    </section>
+
+    <!-- Lista de Serviços -->
+    <section class="space-y-2.5">
+      <div class="flex justify-between items-center px-1">
+        <h2 class="text-sm font-bold text-slate-800">Histórico & Ordens de Serviço (<span id="contadorServicos">0</span>)</h2>
+        <span id="ticketMedioBadge" class="text-[11px] bg-slate-200/70 text-slate-600 px-2.5 py-0.5 rounded-full font-medium">Lucro real médio: R$ 0,00</span>
+      </div>
+      <div id="listaServicos" class="space-y-2.5"></div>
+    </section>
+
+  </main>
+
+  <!-- Modal de Pré-visualização da Ordem de Serviço A4 -->
+  <div id="modalOS" class="fixed inset-0 bg-slate-900/75 backdrop-blur-xs z-50 hidden flex flex-col items-center justify-center p-3 sm:p-6">
+    <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+      <div class="bg-slate-900 text-white px-4 py-3 flex justify-between items-center">
+        <div>
+          <h3 class="text-sm font-bold">Ordem de Serviço #<span id="modalNumOS">001</span></h3>
+          <p class="text-[11px] text-slate-300">Formato Padrão A4 (Pronto para Salvar na Galeria ou Imprimir)</p>
+        </div>
+        <button onclick="fecharModalOS()" class="text-slate-300 hover:text-white text-sm font-bold px-2 py-1">✕ Fechar</button>
+      </div>
+
+      <div class="p-4 overflow-y-auto bg-slate-200 flex-1 flex justify-center">
+        <div id="previewContainer" class="bg-white shadow-md w-full max-w-[540px] p-5 text-[11px] text-slate-800 border border-slate-300 rounded"></div>
+      </div>
+
+      <div class="p-4 bg-white border-t border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        <button id="btnBaixarA4" onclick="baixarOrdemServicoA4()" class="w-full bg-purple-700 hover:bg-purple-800 text-white font-semibold py-3 px-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-sm transition">
+          <span>📥 Baixar Ordem de Serviço (A4 na Galeria)</span>
+        </button>
+        <button onclick="imprimirOrdemServico()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold py-3 px-4 rounded-xl text-sm flex items-center justify-center gap-2 transition">
+          <span>🖨️ Imprimir / Salvar PDF</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Configurações da Loja e Termo de Garantia -->
+  <div id="modalConfig" class="fixed inset-0 bg-slate-900/75 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl p-5 space-y-3 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+        <h3 class="text-base font-bold text-slate-800">Configurar Dados da O.S.</h3>
+        <button onclick="fecharConfigLoja()" class="text-slate-400 hover:text-slate-700 font-bold">✕</button>
+      </div>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">Nome da Assistência</label>
+        <input type="text" id="cfgNomeLoja" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">Telefone / WhatsApp</label>
+          <input type="text" id="cfgTelefoneLoja" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">Instagram / Cidade</label>
+          <input type="text" id="cfgInfoExtra" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">Termo de Garantia (Aparece no rodapé da O.S.)</label>
+        <textarea id="cfgTermoGarantia" rows="5" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs leading-relaxed"></textarea>
+      </div>
+      <button onclick="salvarConfigLoja()" class="w-full bg-purple-700 text-white font-semibold py-2.5 rounded-xl text-sm">
+        Salvar Configurações
+      </button>
+    </div>
+  </div>
+
+  <!-- Área Oculta em Tamanho Real A4 (794px x 1123px) para Exportação em Alta Qualidade -->
+  <div id="areaImpressaoWrapper">
+    <div id="folhaA4Real" class="folha-a4"></div>
+  </div>
+
+  <script>
+    const configPadrao = {
+      nomeLoja: 'MILENIUN SMART - ASSISTÊNCIA TÉCNICA',
+      telefoneLoja: '(82) 99917-3401',
+      infoExtra: '@mileniun_smart_ofc • Olho d\'Água das Flores - AL',
+      termoGarantia: '1. A garantia cobre exclusivamente defeitos de fabricação da peça substituída ou falha na mão de obra realizada, pelo prazo estipulado nesta Ordem de Serviço.\n2. A garantia será automaticamente anulada em caso de: queda, impacto, tela trincada/quebrada, contato com líquidos/umidade, sinais de oxidação, rompimento do selo de garantia ou abertura por terceiros.\n3. Aparelhos não retirados no prazo máximo de 90 dias após a conclusão do serviço estarão sujeitos à cobrança de taxa de armazenamento ou descarte/venda para custeio das peças conforme legislação vigente.\n4. Não nos responsabilizamos por perda de dados, chips ou cartões de memória; recomendamos backup prévio.'
+    };
+
+    let configLoja = JSON.parse(localStorage.getItem('assistencia_config_loja')) || configPadrao;
+    let servicos = JSON.parse(localStorage.getItem('assistencia_servicos')) || [];
+    let metaMensal = parseFloat(localStorage.getItem('assistencia_meta')) || 3000;
+    let lucroMedioManual = localStorage.getItem('assistencia_lucro_medio_manual') || '';
+    let servicoSelecionadoOS = null;
+
+    // Controle do Padrão de Bolinhas (3x3)
+    let tipoSenhaAtual = 'texto';
+    let sequenciaPadrao = [];
+    let desenhandoPadrao = false;
+    let ponteirosGrade = [];
+
+    const canvasPadrao = document.getElementById('canvasPadrao');
+    const ctxPadrao = canvasPadrao.getContext('2d');
+
+    function calcularGradePadrao() {
+      ponteirosGrade = [];
+      const cols = [45, 105, 165];
+      const rows = [45, 105, 165];
+      let idx = 1;
+      for (let r = 0; r < 3; r++) {
+        for (let c = 0; c < 3; c++) {
+          ponteirosGrade.push({ num: idx++, x: cols[c], y: rows[r] });
+        }
+      }
+    }
+
+    function desenharGradePadrao(pontoAtual = null) {
+      ctxPadrao.clearRect(0, 0, canvasPadrao.width, canvasPadrao.height);
+
+      // Linhas conectando a sequência
+      if (sequenciaPadrao.length > 0) {
+        ctxPadrao.beginPath();
+        sequenciaPadrao.forEach((num, i) => {
+          const p = ponteirosGrade.find(pt => pt.num === num);
+          if (i === 0) ctxPadrao.moveTo(p.x, p.y);
+          else ctxPadrao.lineTo(p.x, p.y);
+        });
+        if (desenhandoPadrao && pontoAtual) {
+          ctxPadrao.lineTo(pontoAtual.x, pontoAtual.y);
+        }
+        ctxPadrao.strokeStyle = '#7e22ce';
+        ctxPadrao.lineWidth = 4;
+        ctxPadrao.lineCap = 'round';
+        ctxPadrao.lineJoin = 'round';
+        ctxPadrao.stroke();
+      }
+
+      // Bolinhas da grade
+      ponteirosGrade.forEach(p => {
+        const selecionada = sequenciaPadrao.includes(p.num);
+        ctxPadrao.beginPath();
+        ctxPadrao.arc(p.x, p.y, selecionada ? 12 : 9, 0, Math.PI * 2);
+        ctxPadrao.fillStyle = selecionada ? '#7e22ce' : '#e2e8f0';
+        ctxPadrao.fill();
+        ctxPadrao.lineWidth = 2;
+        ctxPadrao.strokeStyle = selecionada ? '#581c87' : '#94a3b8';
+        ctxPadrao.stroke();
+
+        // Ponto central
+        ctxPadrao.beginPath();
+        ctxPadrao.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
+        ctxPadrao.fillStyle = selecionada ? '#ffffff' : '#64748b';
+        ctxPadrao.fill();
+      });
+
+      document.getElementById('textoSequenciaPadrao').innerText =
+        sequenciaPadrao.length > 0 ? `Sequência: ${sequenciaPadrao.join(' → ')}` : 'Sequência: —';
+    }
+
+    function obterPosicaoCanvas(e) {
+      const rect = canvasPadrao.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return {
+        x: ((clientX - rect.left) / rect.width) * canvasPadrao.width,
+        y: ((clientY - rect.top) / rect.height) * canvasPadrao.height
+      };
+    }
+
+    function verificarColisaoBolinha(pos) {
+      for (const p of ponteirosGrade) {
+        const dist = Math.hypot(pos.x - p.x, pos.y - p.y);
+        if (dist <= 20 && !sequenciaPadrao.includes(p.num)) {
+          sequenciaPadrao.push(p.num);
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function iniciarDesenhoPadrao(e) {
+      e.preventDefault();
+      desenhandoPadrao = true;
+      sequenciaPadrao = [];
+      const pos = obterPosicaoCanvas(e);
+      verificarColisaoBolinha(pos);
+      desenharGradePadrao(pos);
+    }
+
+    function moverDesenhoPadrao(e) {
+      if (!desenhandoPadrao) return;
+      e.preventDefault();
+      const pos = obterPosicaoCanvas(e);
+      verificarColisaoBolinha(pos);
+      desenharGradePadrao(pos);
+    }
+
+    function finalizarDesenhoPadrao() {
+      if (!desenhandoPadrao) return;
+      desenhandoPadrao = false;
+      desenharGradePadrao(null);
+    }
+
+    function limparPadrao() {
+      sequenciaPadrao = [];
+      desenhandoPadrao = false;
+      desenharGradePadrao(null);
+    }
+
+    canvasPadrao.addEventListener('mousedown', iniciarDesenhoPadrao);
+    canvasPadrao.addEventListener('mousemove', moverDesenhoPadrao);
+    window.addEventListener('mouseup', finalizarDesenhoPadrao);
+
+    canvasPadrao.addEventListener('touchstart', iniciarDesenhoPadrao, { passive: false });
+    canvasPadrao.addEventListener('touchmove', moverDesenhoPadrao, { passive: false });
+    window.addEventListener('touchend', finalizarDesenhoPadrao);
+
+    function alternarTipoSenha(tipo) {
+      tipoSenhaAtual = tipo;
+      const btnTexto = document.getElementById('btnSenhaTexto');
+      const btnPadrao = document.getElementById('btnSenhaPadrao');
+      const btnNenhuma = document.getElementById('btnSenhaNenhuma');
+
+      const ativo = 'text-xs px-3 py-1 rounded-lg font-medium transition bg-purple-700 text-white';
+      const inativo = 'text-xs px-3 py-1 rounded-lg font-medium transition bg-white border border-slate-200 text-slate-600 hover:border-purple-400';
+
+      btnTexto.className = tipo === 'texto' ? ativo : inativo;
+      btnPadrao.className = tipo === 'padrao' ? ativo : inativo;
+      btnNenhuma.className = tipo === 'nenhuma' ? ativo : inativo;
+
+      document.getElementById('boxSenhaTexto').classList.toggle('hidden', tipo !== 'texto');
+      document.getElementById('boxSenhaPadrao').classList.toggle('hidden', tipo !== 'padrao');
+      document.getElementById('boxSenhaNenhuma').classList.toggle('hidden', tipo !== 'nenhuma');
+
+      if (tipo === 'padrao') {
+        desenharGradePadrao(null);
+      }
+    }
+
+    // Gera SVG do padrão de bolinhas para exibir na O.S. e na imagem A4
+    function gerarSVGPadrao(sequencia, tamanho = 76) {
+      if (!sequencia || sequencia.length === 0) return '';
+      const cols = [15, 38, 61];
+      const rows = [15, 38, 61];
+      const pontos = [];
+      let n = 1;
+      for (let r = 0; r < 3; r++) {
+        for (let c = 0; c < 3; c++) {
+          pontos.push({ num: n++, x: cols[c], y: rows[r] });
+        }
+      }
+
+      let linhasSVG = '';
+      for (let i = 0; i < sequencia.length - 1; i++) {
+        const p1 = pontos.find(p => p.num === sequencia[i]);
+        const p2 = pontos.find(p => p.num === sequencia[i + 1]);
+        if (p1 && p2) {
+          linhasSVG += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="#111" stroke-width="2.2" stroke-linecap="round" />`;
+        }
+      }
+
+      let bolinhasSVG = pontos.map(p => {
+        const ativa = sequencia.includes(p.num);
+        return `<circle cx="${p.x}" cy="${p.y}" r="${ativa ? 4.5 : 3}" fill="${ativa ? '#111' : '#fff'}" stroke="#111" stroke-width="1.5" />`;
+      }).join('');
+
+      return `
+        <svg width="${tamanho}" height="${tamanho}" viewBox="0 0 76 76" style="background:#fafafa;border:1px solid #999;border-radius:6px;display:inline-block;vertical-align:middle;">
+          ${linhasSVG}
+          ${bolinhasSVG}
+        </svg>
+      `;
+    }
+
+    const formatarMoeda = (valor) => {
+      return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    };
+
+    function gerarNumeroOS() {
+      if (servicos.length === 0) return '001';
+      const maior = servicos.reduce((max, s) => Math.max(max, parseInt(s.numeroOS || 0)), 0);
+      return String(maior + 1).padStart(3, '0');
+    }
+
+    function inicializar() {
+      calcularGradePadrao();
+      desenharGradePadrao(null);
+
+      const hoje = new Date();
+      const anoAtual = hoje.getFullYear();
+      const mesAtual = String(hoje.getMonth() + 1).padStart(2, '0');
+      const diaAtual = hoje.toISOString().split('T')[0];
+
+      document.getElementById('dataServico').value = diaAtual;
+      document.getElementById('inputMeta').value = metaMensal;
+      document.getElementById('inputLucroMedio').value = lucroMedioManual;
+
+      const selectAno = document.getElementById('filtroAno');
+      selectAno.innerHTML = `<option value="todos">Todos</option>`;
+      for (let a = anoAtual + 1; a >= anoAtual - 3; a--) {
+        selectAno.innerHTML += `<option value="${a}">${a}</option>`;
+      }
+
+      selectAno.value = String(anoAtual);
+      document.getElementById('filtroMes').value = mesAtual;
+
+      atualizarTela();
+    }
+
+    function setFiltroRapido(tipo) {
+      const hoje = new Date();
+      const ano = String(hoje.getFullYear());
+      const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+      const dia = hoje.toISOString().split('T')[0];
+
+      if (tipo === 'hoje') {
+        document.getElementById('filtroDia').value = dia;
+        document.getElementById('filtroAno').value = ano;
+        document.getElementById('filtroMes').value = mes;
+      } else if (tipo === 'mes') {
+        document.getElementById('filtroDia').value = '';
+        document.getElementById('filtroAno').value = ano;
+        document.getElementById('filtroMes').value = mes;
+      } else {
+        document.getElementById('filtroDia').value = '';
+        document.getElementById('filtroAno').value = 'todos';
+        document.getElementById('filtroMes').value = 'todos';
+      }
+      atualizarTela();
+    }
+
+    function aplicarFiltroDia() {
+      const diaVal = document.getElementById('filtroDia').value;
+      if (diaVal) {
+        const [ano, mes] = diaVal.split('-');
+        document.getElementById('filtroAno').value = ano;
+        document.getElementById('filtroMes').value = mes;
+      }
+      atualizarTela();
+    }
+
+    function salvarConfigMeta() {
+      const valMeta = parseFloat(document.getElementById('inputMeta').value);
+      if (!isNaN(valMeta) && valMeta >= 0) {
+        metaMensal = valMeta;
+        localStorage.setItem('assistencia_meta', metaMensal);
+      }
+
+      const valManual = document.getElementById('inputLucroMedio').value;
+      lucroMedioManual = valManual;
+      localStorage.setItem('assistencia_lucro_medio_manual', lucroMedioManual);
+
+      atualizarTela();
+    }
+
+    function usarLucroAutomatico() {
+      document.getElementById('inputLucroMedio').value = '';
+      lucroMedioManual = '';
+      localStorage.setItem('assistencia_lucro_medio_manual', '');
+      atualizarTela();
+    }
+
+    function definirLucroRapido(valor) {
+      document.getElementById('inputLucroMedio').value = valor;
+      lucroMedioManual = String(valor);
+      localStorage.setItem('assistencia_lucro_medio_manual', lucroMedioManual);
+      atualizarTela();
+    }
+
+    function adicionarServico(e) {
+      e.preventDefault();
+      const numeroOS = gerarNumeroOS();
+      const cliente = document.getElementById('cliente').value.trim();
+      const telefoneCliente = document.getElementById('telefoneCliente').value.trim();
+      const descricao = document.getElementById('descricao').value.trim();
+
+      let senhaAparelho = 'Sem senha';
+      let padraoDesenhado = null;
+
+      if (tipoSenhaAtual === 'texto') {
+        senhaAparelho = document.getElementById('senhaAparelho').value.trim() || 'Não informada';
+      } else if (tipoSenhaAtual === 'padrao') {
+        padraoDesenhado = [...sequenciaPadrao];
+        senhaAparelho = padraoDesenhado.length > 0 ? `Padrão (${padraoDesenhado.join('-')})` : 'Padrão não desenhado';
+      }
+
+      const valorCobrado = parseFloat(document.getElementById('valorCobrado').value);
+      const custoPeca = parseFloat(document.getElementById('custoPeca').value);
+      const garantia = document.getElementById('garantia').value;
+      const data = document.getElementById('dataServico').value;
+      const observacoes = document.getElementById('observacoes').value.trim();
+
+      const novoServico = {
+        id: Date.now(),
+        numeroOS,
+        cliente,
+        telefoneCliente,
+        descricao,
+        tipoSenha: tipoSenhaAtual,
+        senhaAparelho,
+        padraoDesenhado,
+        valorCobrado,
+        custoPeca,
+        lucro: valorCobrado - custoPeca,
+        garantia,
+        data,
+        observacoes
+      };
+
+      servicos.unshift(novoServico);
+      localStorage.setItem('assistencia_servicos', JSON.stringify(servicos));
+
+      document.getElementById('cliente').value = '';
+      document.getElementById('telefoneCliente').value = '';
+      document.getElementById('descricao').value = '';
+      document.getElementById('senhaAparelho').value = '';
+      document.getElementById('valorCobrado').value = '';
+      document.getElementById('custoPeca').value = '';
+      document.getElementById('observacoes').value = '';
+      limparPadrao();
+      alternarTipoSenha('texto');
+
+      atualizarTela();
+      abrirModalOS(novoServico.id);
+    }
+
+    function excluirServico(id) {
+      if (confirm('Deseja remover este serviço?')) {
+        servicos = servicos.filter(s => s.id !== id);
+        localStorage.setItem('assistencia_servicos', JSON.stringify(servicos));
+        atualizarTela();
+      }
+    }
+
+    function atualizarTela() {
+      document.getElementById('proximoNumeroOS').innerText = gerarNumeroOS();
+
+      const anoFiltro = document.getElementById('filtroAno').value;
+      const mesFiltro = document.getElementById('filtroMes').value;
+      const diaFiltro = document.getElementById('filtroDia').value;
+
+      const filtrados = servicos.filter(s => {
+        if (diaFiltro) return s.data === diaFiltro;
+        const [ano, mes] = s.data.split('-');
+        const bateAno = anoFiltro === 'todos' || ano === anoFiltro;
+        const bateMes = mesFiltro === 'todos' || mes === mesFiltro;
+        return bateAno && bateMes;
+      });
+
+      let faturamentoTotal = 0;
+      let custoTotal = 0;
+      let lucroTotal = 0;
+
+      filtrados.forEach(s => {
+        faturamentoTotal += s.valorCobrado;
+        custoTotal += s.custoPeca;
+        lucroTotal += s.lucro;
+      });
+
+      document.getElementById('resumoFaturamento').innerText = formatarMoeda(faturamentoTotal);
+      document.getElementById('resumoCusto').innerText = formatarMoeda(custoTotal);
+      document.getElementById('resumoLucro').innerText = formatarMoeda(lucroTotal);
+      document.getElementById('contadorServicos').innerText = filtrados.length;
+
+      const lucroRealMedio = filtrados.length > 0 ? (lucroTotal / filtrados.length) : 0;
+      document.getElementById('ticketMedioBadge').innerText = `Lucro real médio: ${formatarMoeda(lucroRealMedio)}`;
+
+      const valorManualNum = parseFloat(lucroMedioManual);
+      const usandoManual = !isNaN(valorManualNum) && valorManualNum > 0;
+      const lucroBaseCalculo = usandoManual ? valorManualNum : lucroRealMedio;
+
+      const btnAuto = document.getElementById('btnModoAuto');
+      if (!usandoManual) {
+        btnAuto.className = 'text-[11px] px-2.5 py-1 rounded-lg font-medium transition bg-purple-700 text-white';
+      } else {
+        btnAuto.className = 'text-[11px] px-2.5 py-1 rounded-lg font-medium transition bg-white border border-slate-200 text-slate-600 hover:border-purple-400';
+      }
+
+      const percentual = metaMensal > 0 ? Math.min(100, Math.max(0, (lucroTotal / metaMensal) * 100)) : 0;
+      const faltaValor = Math.max(0, metaMensal - lucroTotal);
+
+      document.getElementById('barraProgresso').style.width = `${percentual.toFixed(1)}%`;
+      document.getElementById('textoProgresso').innerText = `${percentual.toFixed(1)}% atingido`;
+      document.getElementById('textoFalta').innerText = faltaValor > 0 ? `Faltam ${formatarMoeda(faltaValor)}` : 'Meta atingida!';
+
+      const boxPrevisao = document.getElementById('boxPrevisao');
+      if (metaMensal <= 0) {
+        boxPrevisao.innerHTML = 'Defina um valor de meta acima para acompanhar sua projeção.';
+      } else if (lucroTotal >= metaMensal) {
+        boxPrevisao.innerHTML = `<span class="font-bold text-purple-800">Parabéns!</span> Você bateu sua meta de <strong>${formatarMoeda(metaMensal)}</strong> com <strong>${filtrados.length}</strong> serviço(s) realizado(s).`;
+      } else if (lucroBaseCalculo <= 0) {
+        boxPrevisao.innerHTML = `Faltam <strong>${formatarMoeda(faltaValor)}</strong>. Digite um valor no campo <strong>Lucro/Serviço</strong> acima (ou escolha R$ 80, R$ 120, R$ 150) para calcular quantos reparos você precisa fazer.`;
+      } else {
+        const servicosNecessarios = Math.ceil(faltaValor / lucroBaseCalculo);
+        const totalMetaServicos = Math.ceil(metaMensal / lucroBaseCalculo);
+        const origemTexto = usandoManual ? 'lucro escolhido de' : 'lucro real médio de';
+
+        boxPrevisao.innerHTML = `Considerando um ${origemTexto} <strong>${formatarMoeda(lucroBaseCalculo)}</strong> por aparelho, você precisa de mais <strong class="text-purple-800 text-sm">${servicosNecessarios} serviço(s)</strong> para bater a meta (total de ${totalMetaServicos} serviços para atingir ${formatarMoeda(metaMensal)}).`;
+      }
+
+      const listaEl = document.getElementById('listaServicos');
+      if (filtrados.length === 0) {
+        listaEl.innerHTML = `
+          <div class="bg-white p-8 rounded-2xl text-center border border-slate-100 text-slate-400 text-sm">
+            Nenhum serviço encontrado para este filtro.
+          </div>`;
+        return;
+      }
+
+      listaEl.innerHTML = filtrados.map(s => {
+        const dataFormatada = s.data.split('-').reverse().join('/');
+        const numOS = s.numeroOS || '001';
+        return `
+          <div class="bg-white p-4 rounded-2xl card-shadow border border-slate-100 space-y-3">
+            <div class="flex justify-between items-start gap-3">
+              <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <span class="text-[11px] font-bold bg-purple-100 text-purple-800 px-2 py-0.5 rounded-md">O.S. #${numOS}</span>
+                  <span class="text-[11px] font-medium bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">${dataFormatada}</span>
+                  <span class="text-[11px] font-medium bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md">Garantia: ${s.garantia || '90 dias'}</span>
+                </div>
+                <h3 class="font-bold text-slate-800 text-sm mt-1.5">${s.descricao}</h3>
+                <p class="text-xs text-slate-500 mt-0.5">
+                  Cliente: <strong class="text-slate-700">${s.cliente || 'Não informado'}</strong>
+                  ${s.senhaAparelho ? ` • Senha: <span class="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">${s.senhaAparelho}</span>` : ''}
+                </p>
+              </div>
+              <div class="text-right">
+                <span class="text-[11px] text-slate-400 block">Lucro</span>
+                <strong class="text-sm font-bold ${s.lucro >= 0 ? 'text-purple-700' : 'text-rose-600'}">${formatarMoeda(s.lucro)}</strong>
+              </div>
+            </div>
+
+            <div class="pt-2.5 border-t border-slate-100 flex flex-wrap justify-between items-center gap-2">
+              <div class="flex gap-3 text-xs">
+                <span class="text-slate-500">Total: <strong class="text-slate-800">${formatarMoeda(s.valorCobrado)}</strong></span>
+                <span class="text-slate-500">Peça: <strong class="text-rose-600">${formatarMoeda(s.custoPeca)}</strong></span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="abrirModalOS(${s.id})" class="bg-purple-700 hover:bg-purple-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
+                  📄 Ordem de Serviço
+                </button>
+                <button onclick="excluirServico(${s.id})" class="text-xs text-slate-400 hover:text-rose-600 px-1.5 py-1 transition">
+                  Excluir
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function gerarHTMLOrdemServico(s, isA4Real = false) {
+      const dataFormatada = s.data.split('-').reverse().join('/');
+      const numOS = s.numeroOS || '001';
+      const termoFormatado = configLoja.termoGarantia.replace(/\n/g, '<br>');
+
+      const temPadrao = s.padraoDesenhado && s.padraoDesenhado.length > 0;
+      const svgPadrao = temPadrao ? gerarSVGPadrao(s.padraoDesenhado, isA4Real ? 72 : 56) : '';
+
+      const montarVia = (tituloVia) => `
+        <div style="border: 1.5px solid #111; border-radius: 6px; padding: ${isA4Real ? '16px 20px' : '11px'}; background: #fff;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1.5px solid #111; padding-bottom: 8px; margin-bottom: 10px;">
+            <div>
+              <div style="font-size: ${isA4Real ? '17px' : '12px'}; font-weight: 800; letter-spacing: 0.5px; color: #000;">${configLoja.nomeLoja}</div>
+              <div style="font-size: ${isA4Real ? '11px' : '9px'}; color: #333; margin-top: 2px;">Tel/WhatsApp: ${configLoja.telefoneLoja}</div>
+              <div style="font-size: ${isA4Real ? '10px' : '8.5px'}; color: #555;">${configLoja.infoExtra}</div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: ${isA4Real ? '13px' : '10px'}; font-weight: 800; background: #111; color: #fff; padding: 4px 9px; border-radius: 4px;">ORDEM DE SERVIÇO Nº ${numOS}</div>
+              <div style="font-size: ${isA4Real ? '10.5px' : '8.5px'}; font-weight: 600; margin-top: 4px; color: #333;">Data: ${dataFormatada} • ${tituloVia}</div>
+            </div>
+          </div>
+
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: ${isA4Real ? '11.5px' : '9.5px'};">
+            <tr>
+              <td style="border: 1px solid #ccc; padding: 5px 8px; width: 60%;"><strong>Cliente:</strong> ${s.cliente || 'Consumidor'}</td>
+              <td style="border: 1px solid #ccc; padding: 5px 8px; width: 40%;"><strong>Telefone:</strong> ${s.telefoneCliente || '—'}</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #ccc; padding: 5px 8px;"><strong>Aparelho / Serviço:</strong> ${s.descricao}</td>
+              <td style="border: 1px solid #ccc; padding: 5px 8px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
+                  <div>
+                    <strong>Senha:</strong> ${s.senhaAparelho || '—'}
+                  </div>
+                  ${svgPadrao}
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #ccc; padding: 5px 8px;"><strong>Prazo de Garantia:</strong> <span style="font-weight: 700;">${s.garantia || '90 dias'}</span></td>
+              <td style="border: 1px solid #ccc; padding: 5px 8px;"><strong>Valor Total:</strong> <span style="font-size: ${isA4Real ? '13px' : '10.5px'}; font-weight: 800;">${formatarMoeda(s.valorCobrado)}</span></td>
+            </tr>
+            ${s.observacoes ? `
+            <tr>
+              <td colspan="2" style="border: 1px solid #ccc; padding: 5px 8px;"><strong>Observações:</strong> ${s.observacoes}</td>
+            </tr>` : ''}
+          </table>
+
+          <div style="background: #f9fafb; border: 1px solid #d1d5db; border-radius: 4px; padding: 7px 10px; margin-bottom: 12px;">
+            <div style="font-size: ${isA4Real ? '10.5px' : '8.5px'}; font-weight: 800; text-transform: uppercase; margin-bottom: 3px; color: #111;">Termo de Garantia e Condições de Serviço:</div>
+            <div style="font-size: ${isA4Real ? '9.5px' : '7.8px'}; line-height: 1.35; color: #222;">
+              ${termoFormatado}
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; gap: 30px; margin-top: ${isA4Real ? '18px' : '10px'}; font-size: ${isA4Real ? '10.5px' : '8.5px'}; text-align: center;">
+            <div style="flex: 1;">
+              <div style="border-top: 1px solid #111; padding-top: 3px; font-weight: 600;">${configLoja.nomeLoja}</div>
+              <div style="color: #555; font-size: ${isA4Real ? '9.5px' : '7.5px'};">Assinatura do Técnico / Responsável</div>
+            </div>
+            <div style="flex: 1;">
+              <div style="border-top: 1px solid #111; padding-top: 3px; font-weight: 600;">${s.cliente || 'Assinatura do Cliente'}</div>
+              <div style="color: #555; font-size: ${isA4Real ? '9.5px' : '7.5px'};">De acordo com o serviço e termo de garantia</div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      return `
+        <div style="display: flex; flex-direction: column; justify-content: space-between; height: 100%; gap: ${isA4Real ? '14px' : '10px'};">
+          ${montarVia('1ª VIA - CLIENTE')}
+          <div style="border-top: 1px dashed #888; text-align: center; position: relative; margin: 2px 0;">
+            <span style="background: #fff; padding: 0 8px; font-size: 9px; color: #666; position: relative; top: -7px;">✂️ Recorte aqui</span>
+          </div>
+          ${montarVia('2ª VIA - ASSISTÊNCIA TÉCNICA')}
+        </div>
+      `;
+    }
+
+    function abrirModalOS(id) {
+      const servico = servicos.find(s => s.id === id);
+      if (!servico) return;
+      servicoSelecionadoOS = servico;
+
+      document.getElementById('modalNumOS').innerText = servico.numeroOS || '001';
+      document.getElementById('previewContainer').innerHTML = gerarHTMLOrdemServico(servico, false);
+      document.getElementById('folhaA4Real').innerHTML = gerarHTMLOrdemServico(servico, true);
+
+      document.getElementById('modalOS').classList.remove('hidden');
+    }
+
+    function fecharModalOS() {
+      document.getElementById('modalOS').classList.add('hidden');
+    }
+
+    async function baixarOrdemServicoA4() {
+      if (!servicoSelecionadoOS) return;
+      const btn = document.getElementById('btnBaixarA4');
+      const textoOriginal = btn.innerHTML;
+      btn.innerHTML = '<span>⏳ Gerando Folha A4...</span>';
+      btn.disabled = true;
+
+      try {
+        const elementoA4 = document.getElementById('folhaA4Real');
+        const canvas = await html2canvas(elementoA4, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff'
+        });
+
+        const dataUrl = canvas.toDataURL('image/png', 1.0);
+        const link = document.createElement('a');
+        const nomeClienteLimpo = (servicoSelecionadoOS.cliente || 'Cliente').replace(/[^a-zA-Z0-9]/g, '_');
+        link.download = `OS_${servicoSelecionadoOS.numeroOS || '001'}_${nomeClienteLimpo}_A4.png`;
+        link.href = dataUrl;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (err) {
+        alert('Erro ao gerar imagem da O.S. Tente novamente.');
+      } finally {
+        btn.innerHTML = textoOriginal;
+        btn.disabled = false;
+      }
+    }
+
+    function imprimirOrdemServico() {
+      window.print();
+    }
+
+    function abrirConfigLoja() {
+      document.getElementById('cfgNomeLoja').value = configLoja.nomeLoja;
+      document.getElementById('cfgTelefoneLoja').value = configLoja.telefoneLoja;
+      document.getElementById('cfgInfoExtra').value = configLoja.infoExtra;
+      document.getElementById('cfgTermoGarantia').value = configLoja.termoGarantia;
+      document.getElementById('modalConfig').classList.remove('hidden');
+    }
+
+    function fecharConfigLoja() {
+      document.getElementById('modalConfig').classList.add('hidden');
+    }
+
+    function salvarConfigLoja() {
+      configLoja = {
+        nomeLoja: document.getElementById('cfgNomeLoja').value.trim() || configPadrao.nomeLoja,
+        telefoneLoja: document.getElementById('cfgTelefoneLoja').value.trim(),
+        infoExtra: document.getElementById('cfgInfoExtra').value.trim(),
+        termoGarantia: document.getElementById('cfgTermoGarantia').value.trim() || configPadrao.termoGarantia
+      };
+      localStorage.setItem('assistencia_config_loja', JSON.stringify(configLoja));
+      fecharConfigLoja();
+      alert('Dados da loja e termo de garantia atualizados!');
+    }
+
+    function exportarBackup() {
+      const dados = JSON.stringify({ configLoja, metaMensal, lucroMedioManual, servicos }, null, 2);
+      const blob = new Blob([dados], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `backup-mileniun-smart-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    inicializar();
+  </script>
+</body>
+</html>
