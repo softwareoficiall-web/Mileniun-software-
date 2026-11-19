@@ -46,7 +46,11 @@
     }
 
     .main-nativo {
-      padding-bottom: calc(24px + var(--sab));
+      padding-bottom: calc(88px + var(--sab));
+    }
+
+    .barra-abas-nativa {
+      padding-bottom: calc(10px + var(--sab));
     }
 
     /* Estilos da Folha A4 (Oculta na tela normal, renderizada para captura/impressão) */
@@ -98,7 +102,7 @@
     <div class="max-w-3xl mx-auto flex justify-between items-center">
       <div>
         <h1 class="text-xl font-bold tracking-tight">Mileniun Smart</h1>
-        <p class="text-purple-200 text-xs mt-0.5">Controle Financeiro & Ordem de Serviço</p>
+        <p id="subtituloHeader" class="text-purple-200 text-xs mt-0.5">Controle Financeiro & Ordem de Serviço</p>
       </div>
       <div class="flex gap-2">
         <button onclick="abrirConfigLoja()" class="bg-purple-800/70 hover:bg-purple-800 text-xs font-medium px-3 py-2 rounded-xl border border-purple-500/30 transition">
@@ -111,7 +115,8 @@
     </div>
   </header>
 
-  <main class="max-w-3xl mx-auto px-4 -mt-5 space-y-5">
+  <!-- ABA 1: SERVIÇOS & FINANCEIRO -->
+  <main id="abaServicos" class="max-w-3xl mx-auto px-4 -mt-5 space-y-5">
 
     <!-- Filtros de Período -->
     <section class="bg-white p-4 rounded-2xl card-shadow border border-slate-100">
@@ -220,14 +225,20 @@
       </div>
 
       <form id="formServico" onsubmit="adicionarServico(event)" class="space-y-3">
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs text-slate-500 mb-1">Nome do Cliente *</label>
-            <input type="text" id="cliente" required placeholder="Ex: João da Silva" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-purple-600" />
+        <!-- Seleção de Cliente Existente ou Novo -->
+        <div class="bg-purple-50/50 p-3 rounded-2xl border border-purple-100 space-y-2.5">
+          <div class="flex justify-between items-center">
+            <label class="text-xs font-semibold text-purple-900">Cliente *</label>
+            <span class="text-[11px] text-purple-700">Selecione um salvo ou digite um novo</span>
           </div>
-          <div>
-            <label class="block text-xs text-slate-500 mb-1">WhatsApp / Telefone</label>
-            <input type="tel" id="telefoneCliente" placeholder="Ex: (82) 99999-9999" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-purple-600" />
+
+          <select id="selectClienteExistente" onchange="selecionarClienteExistente()" class="w-full bg-white border border-purple-200 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:border-purple-600">
+            <option value="">+ Novo Cliente (digitar abaixo)</option>
+          </select>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <input type="text" id="cliente" required placeholder="Nome completo do cliente" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-purple-600" />
+            <input type="tel" id="telefoneCliente" placeholder="WhatsApp / Telefone (opcional)" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-purple-600" />
           </div>
         </div>
 
@@ -318,6 +329,55 @@
 
   </main>
 
+  <!-- ABA 2: CLIENTES -->
+  <main id="abaClientes" class="max-w-3xl mx-auto px-4 -mt-5 space-y-5 hidden">
+
+    <!-- Cadastrar Cliente Avulso -->
+    <section class="bg-white p-5 rounded-2xl card-shadow border border-slate-100">
+      <h2 class="text-sm font-bold text-slate-800 mb-3">Cadastrar Novo Cliente</h2>
+      <form id="formCliente" onsubmit="cadastrarClienteAvulso(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">Nome do Cliente *</label>
+          <input type="text" id="novoClienteNome" required placeholder="Ex: Maria Oliveira" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-purple-600" />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">WhatsApp / Telefone</label>
+          <input type="tel" id="novoClienteTel" placeholder="Ex: (82) 99999-9999" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-purple-600" />
+        </div>
+        <div class="flex items-end">
+          <button type="submit" class="w-full bg-purple-700 hover:bg-purple-800 text-white font-semibold py-2.5 px-4 rounded-xl text-sm transition">
+            + Salvar Cliente
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Busca e Lista de Clientes com Faturamento e Lucro -->
+    <section class="space-y-3">
+      <div class="flex flex-wrap justify-between items-center gap-2 px-1">
+        <h2 class="text-sm font-bold text-slate-800">Clientes (<span id="contadorClientes">0</span>)</h2>
+        <input type="text" id="buscaCliente" oninput="renderizarClientes()" placeholder="Buscar cliente por nome..." class="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs w-52 focus:outline-none focus:border-purple-600" />
+      </div>
+
+      <div id="listaClientes" class="space-y-3"></div>
+    </section>
+
+  </main>
+
+  <!-- Barra de Navegação Inferior Estilo App Nativo -->
+  <nav class="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-slate-200 barra-abas-nativa z-40">
+    <div class="max-w-3xl mx-auto grid grid-cols-2">
+      <button onclick="trocarAba('servicos')" id="tabBtnServicos" class="py-2.5 flex flex-col items-center justify-center gap-0.5 text-purple-700 font-semibold transition">
+        <span class="text-lg leading-none">🛠️</span>
+        <span class="text-[11px]">Serviços & O.S.</span>
+      </button>
+      <button onclick="trocarAba('clientes')" id="tabBtnClientes" class="py-2.5 flex flex-col items-center justify-center gap-0.5 text-slate-400 font-medium transition">
+        <span class="text-lg leading-none">👥</span>
+        <span class="text-[11px]">Clientes</span>
+      </button>
+    </div>
+  </nav>
+
   <!-- Modal de Pré-visualização da Ordem de Serviço A4 -->
   <div id="modalOS" class="fixed inset-0 bg-slate-900/75 backdrop-blur-xs z-50 hidden flex flex-col items-center justify-center p-3 sm:p-6">
     <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
@@ -390,6 +450,7 @@
 
     let configLoja = JSON.parse(localStorage.getItem('assistencia_config_loja')) || configPadrao;
     let servicos = JSON.parse(localStorage.getItem('assistencia_servicos')) || [];
+    let clientes = JSON.parse(localStorage.getItem('assistencia_clientes')) || [];
     let metaMensal = parseFloat(localStorage.getItem('assistencia_meta')) || 3000;
     let lucroMedioManual = localStorage.getItem('assistencia_lucro_medio_manual') || '';
     let servicoSelecionadoOS = null;
@@ -402,6 +463,203 @@
     const canvasPadrao = document.getElementById('canvasPadrao');
     const ctxPadrao = canvasPadrao.getContext('2d');
 
+    const formatarMoeda = (valor) => {
+      return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    };
+
+    // Sincroniza clientes existentes com os serviços já registrados
+    function sincronizarClientesComServicos() {
+      let alterou = false;
+      servicos.forEach(s => {
+        const nomeLimpo = (s.cliente || '').trim();
+        if (!nomeLimpo) return;
+        const jaExiste = clientes.some(c => c.nome.toLowerCase() === nomeLimpo.toLowerCase());
+        if (!jaExiste) {
+          clientes.push({
+            id: Date.now() + Math.random(),
+            nome: nomeLimpo,
+            telefone: (s.telefoneCliente || '').trim()
+          });
+          alterou = true;
+        }
+      });
+      if (alterou) {
+        localStorage.setItem('assistencia_clientes', JSON.stringify(clientes));
+      }
+    }
+
+    function trocarAba(aba) {
+      const isServicos = aba === 'servicos';
+      document.getElementById('abaServicos').classList.toggle('hidden', !isServicos);
+      document.getElementById('abaClientes').classList.toggle('hidden', isServicos);
+
+      document.getElementById('tabBtnServicos').className = isServicos
+        ? 'py-2.5 flex flex-col items-center justify-center gap-0.5 text-purple-700 font-semibold transition'
+        : 'py-2.5 flex flex-col items-center justify-center gap-0.5 text-slate-400 font-medium transition';
+
+      document.getElementById('tabBtnClientes').className = !isServicos
+        ? 'py-2.5 flex flex-col items-center justify-center gap-0.5 text-purple-700 font-semibold transition'
+        : 'py-2.5 flex flex-col items-center justify-center gap-0.5 text-slate-400 font-medium transition';
+
+      document.getElementById('subtituloHeader').innerText = isServicos
+        ? 'Controle Financeiro & Ordem de Serviço'
+        : 'Histórico de Compras, Faturamento e Lucro por Cliente';
+
+      if (!isServicos) {
+        renderizarClientes();
+      } else {
+        atualizarSelectClientes();
+      }
+    }
+
+    function atualizarSelectClientes(nomeSelecionado = '') {
+      const select = document.getElementById('selectClienteExistente');
+      const ordenados = [...clientes].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+
+      select.innerHTML = `<option value="">+ Novo Cliente (digitar abaixo)</option>` +
+        ordenados.map(c => `<option value="${c.id}" ${c.nome === nomeSelecionado ? 'selected' : ''}>${c.nome}${c.telefone ? ` (${c.telefone})` : ''}</option>`).join('');
+    }
+
+    function selecionarClienteExistente() {
+      const id = document.getElementById('selectClienteExistente').value;
+      if (!id) return;
+      const cli = clientes.find(c => String(c.id) === String(id));
+      if (cli) {
+        document.getElementById('cliente').value = cli.nome;
+        if (cli.telefone) {
+          document.getElementById('telefoneCliente').value = cli.telefone;
+        }
+      }
+    }
+
+    function cadastrarClienteAvulso(e) {
+      e.preventDefault();
+      const nome = document.getElementById('novoClienteNome').value.trim();
+      const telefone = document.getElementById('novoClienteTel').value.trim();
+      if (!nome) return;
+
+      const existente = clientes.find(c => c.nome.toLowerCase() === nome.toLowerCase());
+      if (existente) {
+        if (telefone) existente.telefone = telefone;
+      } else {
+        clientes.push({
+          id: Date.now(),
+          nome,
+          telefone
+        });
+      }
+
+      localStorage.setItem('assistencia_clientes', JSON.stringify(clientes));
+      document.getElementById('novoClienteNome').value = '';
+      document.getElementById('novoClienteTel').value = '';
+      atualizarSelectClientes(nome);
+      renderizarClientes();
+    }
+
+    function renderizarClientes() {
+      const busca = (document.getElementById('buscaCliente')?.value || '').trim().toLowerCase();
+
+      // Calcula métricas por cliente com base nos serviços salvos
+      const mapaStats = new Map();
+
+      clientes.forEach(c => {
+        mapaStats.set(c.nome.toLowerCase(), {
+          id: c.id,
+          nome: c.nome,
+          telefone: c.telefone || '',
+          qtdServicos: 0,
+          faturamento: 0,
+          custo: 0,
+          lucro: 0,
+          servicos: []
+        });
+      });
+
+      servicos.forEach(s => {
+        const nomeLimpo = (s.cliente || '').trim();
+        if (!nomeLimpo) return;
+        const chave = nomeLimpo.toLowerCase();
+        if (!mapaStats.has(chave)) {
+          mapaStats.set(chave, {
+            id: s.id,
+            nome: nomeLimpo,
+            telefone: s.telefoneCliente || '',
+            qtdServicos: 0,
+            faturamento: 0,
+            custo: 0,
+            lucro: 0,
+            servicos: []
+          });
+        }
+        const stat = mapaStats.get(chave);
+        stat.qtdServicos += 1;
+        stat.faturamento += Number(s.valorCobrado || 0);
+        stat.custo += Number(s.custoPeca || 0);
+        stat.lucro += Number(s.lucro ?? (Number(s.valorCobrado || 0) - Number(s.custoPeca || 0)));
+        if (!stat.telefone && s.telefoneCliente) stat.telefone = s.telefoneCliente;
+        stat.servicos.push(s);
+      });
+
+      let lista = Array.from(mapaStats.values());
+      if (busca) {
+        lista = lista.filter(item => item.nome.toLowerCase().includes(busca));
+      }
+
+      // Ordena por maior faturamento
+      lista.sort((a, b) => b.faturamento - a.faturamento);
+
+      document.getElementById('contadorClientes').innerText = lista.length;
+
+      const container = document.getElementById('listaClientes');
+      if (lista.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white p-8 rounded-2xl text-center border border-slate-100 text-slate-400 text-sm">
+            Nenhum cliente encontrado.
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = lista.map(item => `
+        <div class="bg-white p-4 rounded-2xl card-shadow border border-slate-100 space-y-3">
+          <div class="flex justify-between items-start gap-2">
+            <div>
+              <h3 class="font-bold text-slate-800 text-sm">${item.nome}</h3>
+              <p class="text-xs text-slate-500 mt-0.5">
+                ${item.telefone ? `📱 ${item.telefone} • ` : ''}<strong>${item.qtdServicos}</strong> serviço(s) / compra(s)
+              </p>
+            </div>
+            <button onclick="usarClienteNaOS('${item.nome.replace(/'/g, "\\'")}')" class="bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-semibold px-3 py-1.5 rounded-lg transition">
+              + Nova O.S.
+            </button>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100">
+            <div class="bg-slate-50 p-2.5 rounded-xl">
+              <span class="text-[10px] text-slate-500 block">Total Comprado</span>
+              <strong class="text-xs sm:text-sm font-bold text-slate-800">${formatarMoeda(item.faturamento)}</strong>
+            </div>
+            <div class="bg-slate-50 p-2.5 rounded-xl">
+              <span class="text-[10px] text-slate-500 block">Faturamento</span>
+              <strong class="text-xs sm:text-sm font-bold text-slate-800">${formatarMoeda(item.faturamento)}</strong>
+            </div>
+            <div class="bg-purple-50 p-2.5 rounded-xl">
+              <span class="text-[10px] text-purple-700 block">Lucro Gerado</span>
+              <strong class="text-xs sm:text-sm font-bold ${item.lucro >= 0 ? 'text-purple-800' : 'text-rose-600'}">${formatarMoeda(item.lucro)}</strong>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function usarClienteNaOS(nomeCliente) {
+      trocarAba('servicos');
+      atualizarSelectClientes(nomeCliente);
+      selecionarClienteExistente();
+      document.getElementById('cliente').value = nomeCliente;
+      document.getElementById('descricao').focus();
+    }
+
+    // --- Padrão de Bolinhas 3x3 ---
     function calcularGradePadrao() {
       ponteirosGrade = [];
       const cols = [45, 105, 165];
@@ -568,10 +826,6 @@
       `;
     }
 
-    const formatarMoeda = (valor) => {
-      return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    };
-
     function gerarNumeroOS() {
       if (servicos.length === 0) return '001';
       const maior = servicos.reduce((max, s) => Math.max(max, parseInt(s.numeroOS || 0)), 0);
@@ -579,6 +833,7 @@
     }
 
     function inicializar() {
+      sincronizarClientesComServicos();
       calcularGradePadrao();
       desenharGradePadrao(null);
 
@@ -600,6 +855,7 @@
       selectAno.value = String(anoAtual);
       document.getElementById('filtroMes').value = mesAtual;
 
+      atualizarSelectClientes();
       atualizarTela();
     }
 
@@ -668,6 +924,22 @@
       const numeroOS = gerarNumeroOS();
       const cliente = document.getElementById('cliente').value.trim();
       const telefoneCliente = document.getElementById('telefoneCliente').value.trim();
+
+      // Salva/atualiza automaticamente na base de clientes
+      if (cliente) {
+        const existente = clientes.find(c => c.nome.toLowerCase() === cliente.toLowerCase());
+        if (existente) {
+          if (telefoneCliente) existente.telefone = telefoneCliente;
+        } else {
+          clientes.push({
+            id: Date.now() + 1,
+            nome: cliente,
+            telefone: telefoneCliente
+          });
+        }
+        localStorage.setItem('assistencia_clientes', JSON.stringify(clientes));
+      }
+
       const descricao = document.getElementById('descricao').value.trim();
 
       let senhaAparelho = 'Sem senha';
@@ -708,6 +980,7 @@
 
       document.getElementById('cliente').value = '';
       document.getElementById('telefoneCliente').value = '';
+      document.getElementById('selectClienteExistente').value = '';
       document.getElementById('descricao').value = '';
       document.getElementById('senhaAparelho').value = '';
       document.getElementById('valorCobrado').value = '';
@@ -716,6 +989,7 @@
       limparPadrao();
       alternarTipoSenha('texto');
 
+      atualizarSelectClientes();
       atualizarTela();
       abrirModalOS(novoServico.id);
     }
@@ -1001,7 +1275,7 @@
     }
 
     function exportarBackup() {
-      const dados = JSON.stringify({ configLoja, metaMensal, lucroMedioManual, servicos }, null, 2);
+      const dados = JSON.stringify({ configLoja, metaMensal, lucroMedioManual, clientes, servicos }, null, 2);
       const blob = new Blob([dados], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
