@@ -16,6 +16,18 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
   <style>
     :root {
       --sat: env(safe-area-inset-top, 0px);
@@ -24,8 +36,6 @@
 
     html, body {
       font-family: 'Inter', sans-serif;
-      background-color: #f8fafc;
-      color: #0f172a;
       -webkit-tap-highlight-color: transparent;
       overscroll-behavior-y: none;
       user-select: none;
@@ -38,11 +48,11 @@
     }
 
     .card-shadow {
-      box-shadow: 0 4px 20px -2px rgba(88, 28, 135, 0.06);
+      box-shadow: 0 4px 20px -2px rgba(88, 28, 135, 0.08);
     }
 
     .header-nativo {
-      padding-top: calc(20px + var(--sat));
+      padding-top: calc(18px + var(--sat));
     }
 
     .main-nativo {
@@ -50,10 +60,10 @@
     }
 
     .barra-abas-nativa {
-      padding-bottom: calc(10px + var(--sab));
+      padding-bottom: calc(8px + var(--sab));
     }
 
-    /* Estilos da Folha A4 (Oculta na tela normal, renderizada para captura/impressão) */
+    /* Área de Impressão / Exportação A4 (Sempre fundo branco e texto preto para impressão limpa) */
     #areaImpressaoWrapper {
       position: fixed;
       left: -9999px;
@@ -66,7 +76,7 @@
       min-height: 1123px;
       background: #ffffff;
       color: #000000;
-      padding: 36px 42px;
+      padding: 40px 44px;
       box-sizing: border-box;
       font-family: 'Inter', sans-serif;
       display: flex;
@@ -75,41 +85,40 @@
     }
 
     @media print {
-      body * {
-        visibility: hidden;
-      }
-      #areaImpressaoWrapper, #areaImpressaoWrapper * {
-        visibility: visible;
+      body > *:not(#areaImpressaoWrapper) {
+        display: none !important;
       }
       #areaImpressaoWrapper {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
+        display: block !important;
+        position: static !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        z-index: 99999 !important;
+        background: #ffffff !important;
       }
       .folha-a4 {
-        width: 100%;
-        min-height: auto;
-        padding: 10mm;
+        width: 100% !important;
+        min-height: 277mm !important;
+        padding: 12mm !important;
+        margin: 0 auto !important;
+        box-shadow: none !important;
       }
     }
   </style>
 </head>
-<body class="main-nativo">
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 main-nativo transition-colors duration-200">
 
   <!-- Cabeçalho -->
-  <header class="bg-purple-700 text-white header-nativo pb-8 px-4 rounded-b-3xl shadow-md">
-    <div class="max-w-3xl mx-auto flex justify-between items-center">
-      <div>
-        <h1 class="text-xl font-bold tracking-tight">Mileniun Smart</h1>
-        <p id="subtituloHeader" class="text-purple-200 text-xs mt-0.5">Controle Financeiro & Ordem de Serviço</p>
+  <header class="bg-purple-700 dark:bg-purple-900 text-white header-nativo pb-8 px-4 rounded-b-3xl shadow-md">
+    <div class="max-w-3xl mx-auto flex justify-between items-center gap-2">
+      <div class="min-w-0">
+        <h1 class="text-xl font-bold tracking-tight truncate">Mileniun Smart</h1>
+        <p id="subtituloHeader" class="text-purple-200 text-xs mt-0.5 truncate">Controle Financeiro & Ordem de Serviço</p>
       </div>
-      <div class="flex gap-2">
-        <button onclick="abrirConfigLoja()" class="bg-purple-800/70 hover:bg-purple-800 text-xs font-medium px-3 py-2 rounded-xl border border-purple-500/30 transition">
-          Dados da Loja
-        </button>
-        <button onclick="exportarBackup()" class="bg-purple-800/70 hover:bg-purple-800 text-xs font-medium px-3 py-2 rounded-xl border border-purple-500/30 transition">
-          Backup
+      <div class="flex items-center gap-2 shrink-0">
+        <button type="button" onclick="alternarTema()" id="btnTemaTopo" class="bg-purple-800/80 hover:bg-purple-800 text-xs font-semibold px-3 py-2 rounded-xl border border-purple-500/30 transition">
+          🌙 Escuro
         </button>
       </div>
     </div>
@@ -118,24 +127,133 @@
   <!-- ABA 1: SERVIÇOS & FINANCEIRO -->
   <main id="abaServicos" class="max-w-3xl mx-auto px-4 -mt-5 space-y-5">
 
+    <!-- Botão Compacto para Abrir/Fechar Formulário de Nova O.S. -->
+    <section class="bg-white dark:bg-slate-900 p-4 rounded-2xl card-shadow border border-slate-100 dark:border-slate-800">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <span class="text-[11px] font-bold uppercase tracking-wider text-purple-700 dark:text-purple-400">O.S. #<span id="proximoNumeroOS">001</span></span>
+          <h2 class="text-sm font-bold text-slate-800 dark:text-white mt-0.5">Ordem de Serviço</h2>
+        </div>
+        <button type="button" onclick="toggleFormularioOS()" id="btnToggleOS" class="bg-purple-700 hover:bg-purple-800 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-sm transition active:scale-[0.98]">
+          + Criar uma nova ordem de serviço
+        </button>
+      </div>
+
+      <!-- Formulário Oculto até Clicar no Botão -->
+      <div id="containerFormularioOS" class="hidden mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+        <form id="formServico" onsubmit="adicionarServico(event)" class="space-y-3">
+          <!-- Seleção de Cliente Existente ou Novo -->
+          <div class="bg-purple-50/70 dark:bg-purple-950/30 p-3 rounded-2xl border border-purple-100 dark:border-purple-900/50 space-y-2.5">
+            <div class="flex flex-wrap justify-between items-center gap-1">
+              <label class="text-xs font-semibold text-purple-900 dark:text-purple-300">Cliente *</label>
+              <span class="text-[11px] text-purple-700 dark:text-purple-400">Selecione um salvo ou digite um novo</span>
+            </div>
+
+            <select id="selectClienteExistente" onchange="selecionarClienteExistente()" class="w-full bg-white dark:bg-slate-800 border border-purple-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-700 dark:text-slate-100 focus:outline-none focus:border-purple-600">
+              <option value="">+ Novo Cliente (digitar abaixo)</option>
+            </select>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <input type="text" id="cliente" required placeholder="Nome completo do cliente" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:border-purple-600" />
+              <input type="tel" id="telefoneCliente" placeholder="WhatsApp / Telefone (opcional)" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:border-purple-600" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Aparelho & Serviço Realizado *</label>
+            <input type="text" id="descricao" required placeholder="Ex: Galaxy A16 - Troca de Frontal" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:border-purple-600" />
+          </div>
+
+          <!-- Tipo de Senha do Aparelho -->
+          <div class="bg-slate-50 dark:bg-slate-800/70 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-700 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <label class="text-xs font-semibold text-slate-700 dark:text-slate-200">Senha de Desbloqueio do Aparelho</label>
+              <div class="flex flex-wrap gap-1.5">
+                <button type="button" onclick="alternarTipoSenha('texto')" id="btnSenhaTexto" class="text-xs px-3 py-1 rounded-lg font-medium transition bg-purple-700 text-white">
+                  PIN / Senha Texto
+                </button>
+                <button type="button" onclick="alternarTipoSenha('padrao')" id="btnSenhaPadrao" class="text-xs px-3 py-1 rounded-lg font-medium transition bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-purple-400">
+                  ● Padrão (Bolinhas)
+                </button>
+                <button type="button" onclick="alternarTipoSenha('nenhuma')" id="btnSenhaNenhuma" class="text-xs px-3 py-1 rounded-lg font-medium transition bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-purple-400">
+                  Sem Senha
+                </button>
+              </div>
+            </div>
+
+            <div id="boxSenhaTexto">
+              <input type="text" id="senhaAparelho" placeholder="Digite o PIN, senha numérica ou observação..." class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:border-purple-600" />
+            </div>
+
+            <div id="boxSenhaPadrao" class="hidden flex flex-col items-center py-2">
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-2">Arraste ou clique nas bolinhas na ordem do padrão:</p>
+              <canvas id="canvasPadrao" width="210" height="210" class="bg-white border-2 border-purple-200 rounded-2xl touch-none shadow-xs cursor-crosshair"></canvas>
+              <div class="flex items-center justify-between w-full max-w-[210px] mt-2">
+                <span id="textoSequenciaPadrao" class="text-[11px] font-mono text-purple-700 dark:text-purple-400 font-semibold">Sequência: —</span>
+                <button type="button" onclick="limparPadrao()" class="text-xs text-rose-600 dark:text-rose-400 hover:underline font-medium">Limpar</button>
+              </div>
+            </div>
+
+            <div id="boxSenhaNenhuma" class="hidden text-xs text-slate-400 italic">
+              Aparelho sem senha de bloqueio.
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div>
+              <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Valor Cobrado *</label>
+              <input type="number" id="valorCobrado" step="0.01" min="0" required placeholder="250.00" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:border-purple-600" />
+            </div>
+            <div>
+              <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Custo Peça *</label>
+              <input type="number" id="custoPeca" step="0.01" min="0" required placeholder="90.00" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:border-purple-600" />
+            </div>
+            <div>
+              <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Garantia</label>
+              <select id="garantia" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-2.5 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:border-purple-600">
+                <option value="90 dias">90 dias (3 meses)</option>
+                <option value="30 dias">30 dias</option>
+                <option value="60 dias">60 dias</option>
+                <option value="6 meses">6 meses</option>
+                <option value="Sem garantia">Sem garantia</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Data *</label>
+              <input type="date" id="dataServico" required class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-2.5 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:border-purple-600" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Observações / Estado do Aparelho (Opcional)</label>
+            <input type="text" id="observacoes" placeholder="Ex: Aparelho entrou com tampa traseira riscada e sem chip." class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:border-purple-600" />
+          </div>
+
+          <button type="submit" class="w-full bg-purple-700 hover:bg-purple-800 text-white font-semibold py-3 rounded-xl text-sm shadow-sm transition active:scale-[0.99]">
+            + Salvar Serviço e Gerar Ordem de Serviço
+          </button>
+        </form>
+      </div>
+    </section>
+
     <!-- Filtros de Período -->
-    <section class="bg-white p-4 rounded-2xl card-shadow border border-slate-100">
+    <section class="bg-white dark:bg-slate-900 p-4 rounded-2xl card-shadow border border-slate-100 dark:border-slate-800">
       <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
         <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Filtrar Período</span>
         <div class="flex gap-1.5">
-          <button onclick="setFiltroRapido('hoje')" class="text-xs bg-purple-50 text-purple-700 font-medium px-2.5 py-1 rounded-lg hover:bg-purple-100 transition">Hoje</button>
-          <button onclick="setFiltroRapido('mes')" class="text-xs bg-purple-50 text-purple-700 font-medium px-2.5 py-1 rounded-lg hover:bg-purple-100 transition">Este Mês</button>
-          <button onclick="setFiltroRapido('todos')" class="text-xs bg-slate-100 text-slate-600 font-medium px-2.5 py-1 rounded-lg hover:bg-slate-200 transition">Tudo</button>
+          <button type="button" onclick="setFiltroRapido('hoje')" class="text-xs bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 font-medium px-2.5 py-1 rounded-lg hover:bg-purple-100 transition">Hoje</button>
+          <button type="button" onclick="setFiltroRapido('mes')" class="text-xs bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 font-medium px-2.5 py-1 rounded-lg hover:bg-purple-100 transition">Este Mês</button>
+          <button type="button" onclick="setFiltroRapido('todos')" class="text-xs bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium px-2.5 py-1 rounded-lg hover:bg-slate-200 transition">Tudo</button>
         </div>
       </div>
       <div class="grid grid-cols-3 gap-2">
         <div>
-          <label class="block text-[11px] text-slate-500 mb-1">Ano</label>
-          <select id="filtroAno" onchange="atualizarTela()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-sm focus:outline-none focus:border-purple-600"></select>
+          <label class="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">Ano</label>
+          <select id="filtroAno" onchange="atualizarTela()" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-2 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:border-purple-600"></select>
         </div>
         <div>
-          <label class="block text-[11px] text-slate-500 mb-1">Mês</label>
-          <select id="filtroMes" onchange="atualizarTela()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-sm focus:outline-none focus:border-purple-600">
+          <label class="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">Mês</label>
+          <select id="filtroMes" onchange="atualizarTela()" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-2 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:border-purple-600">
             <option value="todos">Todos</option>
             <option value="01">Janeiro</option>
             <option value="02">Fevereiro</option>
@@ -152,177 +270,76 @@
           </select>
         </div>
         <div>
-          <label class="block text-[11px] text-slate-500 mb-1">Dia Específico</label>
-          <input type="date" id="filtroDia" onchange="aplicarFiltroDia()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 text-sm focus:outline-none focus:border-purple-600" />
+          <label class="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">Dia Específico</label>
+          <input type="date" id="filtroDia" onchange="aplicarFiltroDia()" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2 py-2 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:border-purple-600" />
         </div>
       </div>
     </section>
 
     <!-- Resumo Financeiro -->
     <section class="grid grid-cols-3 gap-3">
-      <div class="bg-white p-4 rounded-2xl card-shadow border border-slate-100">
-        <span class="text-xs text-slate-500 block">Faturamento</span>
-        <strong id="resumoFaturamento" class="text-base sm:text-lg font-bold text-slate-800 mt-1 block">R$ 0,00</strong>
+      <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl card-shadow border border-slate-100 dark:border-slate-800">
+        <span class="text-xs text-slate-500 dark:text-slate-400 block">Faturamento</span>
+        <strong id="resumoFaturamento" class="text-base sm:text-lg font-bold text-slate-800 dark:text-white mt-1 block">R$ 0,00</strong>
       </div>
-      <div class="bg-white p-4 rounded-2xl card-shadow border border-slate-100">
-        <span class="text-xs text-slate-500 block">Custo Peças</span>
-        <strong id="resumoCusto" class="text-base sm:text-lg font-bold text-rose-600 mt-1 block">R$ 0,00</strong>
+      <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl card-shadow border border-slate-100 dark:border-slate-800">
+        <span class="text-xs text-slate-500 dark:text-slate-400 block">Custo Peças</span>
+        <strong id="resumoCusto" class="text-base sm:text-lg font-bold text-rose-600 dark:text-rose-400 mt-1 block">R$ 0,00</strong>
       </div>
-      <div class="bg-purple-50 p-4 rounded-2xl card-shadow border border-purple-100">
-        <span class="text-xs text-purple-700 font-medium block">Lucro Líquido</span>
-        <strong id="resumoLucro" class="text-base sm:text-lg font-bold text-purple-800 mt-1 block">R$ 0,00</strong>
+      <div class="bg-purple-50 dark:bg-purple-950/50 p-4 rounded-2xl card-shadow border border-purple-100 dark:border-purple-900/50">
+        <span class="text-xs text-purple-700 dark:text-purple-300 font-medium block">Lucro Líquido</span>
+        <strong id="resumoLucro" class="text-base sm:text-lg font-bold text-purple-800 dark:text-purple-200 mt-1 block">R$ 0,00</strong>
       </div>
     </section>
 
     <!-- Meta Mensal e Previsão de Serviços -->
-    <section class="bg-white p-5 rounded-2xl card-shadow border border-slate-100">
+    <section class="bg-white dark:bg-slate-900 p-5 rounded-2xl card-shadow border border-slate-100 dark:border-slate-800">
       <div class="flex flex-wrap justify-between items-start gap-3 mb-4">
         <div>
-          <h2 class="text-sm font-bold text-slate-800">Meta de Lucro Mensal</h2>
-          <p class="text-xs text-slate-500">Simule quantos serviços faltam</p>
+          <h2 class="text-sm font-bold text-slate-800 dark:text-white">Meta de Lucro Mensal</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Simule quantos serviços faltam</p>
         </div>
 
         <div class="flex items-center gap-3">
           <div>
             <label class="block text-[10px] text-slate-400 uppercase font-semibold mb-0.5 text-right">Meta (R$)</label>
-            <input type="number" id="inputMeta" step="50" placeholder="3000" onchange="salvarConfigMeta()" class="w-24 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-sm font-semibold text-purple-700 text-right focus:outline-none focus:border-purple-600" />
+            <input type="number" id="inputMeta" step="50" placeholder="3000" onchange="salvarConfigMeta()" class="w-24 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-sm font-semibold text-purple-700 dark:text-purple-300 text-right focus:outline-none focus:border-purple-600" />
           </div>
           <div>
             <label class="block text-[10px] text-slate-400 uppercase font-semibold mb-0.5 text-right">Lucro/Serviço</label>
-            <input type="number" id="inputLucroMedio" step="10" placeholder="Auto" oninput="salvarConfigMeta()" class="w-24 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-sm font-semibold text-slate-700 text-right focus:outline-none focus:border-purple-600" />
+            <input type="number" id="inputLucroMedio" step="10" placeholder="Auto" oninput="salvarConfigMeta()" class="w-24 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-sm font-semibold text-slate-700 dark:text-slate-200 text-right focus:outline-none focus:border-purple-600" />
           </div>
         </div>
       </div>
 
-      <div class="flex items-center justify-between gap-2 mb-3 bg-slate-50 p-2 rounded-xl border border-slate-100">
-        <span class="text-[11px] text-slate-500 font-medium">Base de cálculo:</span>
-        <div class="flex gap-1">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-3 bg-slate-50 dark:bg-slate-800/70 p-2 rounded-xl border border-slate-100 dark:border-slate-700">
+        <span class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Base de cálculo:</span>
+        <div class="flex flex-wrap gap-1">
           <button type="button" onclick="usarLucroAutomatico()" id="btnModoAuto" class="text-[11px] px-2.5 py-1 rounded-lg font-medium transition bg-purple-700 text-white">Automático</button>
-          <button type="button" onclick="definirLucroRapido(80)" class="text-[11px] px-2 py-1 rounded-lg font-medium bg-white border border-slate-200 text-slate-600 hover:border-purple-400">R$ 80</button>
-          <button type="button" onclick="definirLucroRapido(120)" class="text-[11px] px-2 py-1 rounded-lg font-medium bg-white border border-slate-200 text-slate-600 hover:border-purple-400">R$ 120</button>
-          <button type="button" onclick="definirLucroRapido(150)" class="text-[11px] px-2 py-1 rounded-lg font-medium bg-white border border-slate-200 text-slate-600 hover:border-purple-400">R$ 150</button>
+          <button type="button" onclick="definirLucroRapido(80)" class="text-[11px] px-2 py-1 rounded-lg font-medium bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-purple-400">R$ 80</button>
+          <button type="button" onclick="definirLucroRapido(120)" class="text-[11px] px-2 py-1 rounded-lg font-medium bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-purple-400">R$ 120</button>
+          <button type="button" onclick="definirLucroRapido(150)" class="text-[11px] px-2 py-1 rounded-lg font-medium bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-purple-400">R$ 150</button>
         </div>
       </div>
 
-      <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden mb-2">
+      <div class="w-full bg-slate-100 dark:bg-slate-800 h-3 rounded-full overflow-hidden mb-2">
         <div id="barraProgresso" class="bg-purple-600 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
       </div>
       <div class="flex justify-between text-xs font-medium mb-4">
-        <span id="textoProgresso" class="text-purple-700">0% atingido</span>
-        <span id="textoFalta" class="text-slate-500">Faltam R$ 0,00</span>
+        <span id="textoProgresso" class="text-purple-700 dark:text-purple-400">0% atingido</span>
+        <span id="textoFalta" class="text-slate-500 dark:text-slate-400">Faltam R$ 0,00</span>
       </div>
 
-      <div id="boxPrevisao" class="bg-purple-50/70 border border-purple-100 rounded-xl p-3.5 text-xs text-slate-700 leading-relaxed">
+      <div id="boxPrevisao" class="bg-purple-50/70 dark:bg-purple-950/30 border border-purple-100 dark:border-purple-900/50 rounded-xl p-3.5 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
         Adicione serviços ou escolha um lucro médio acima para simular.
       </div>
-    </section>
-
-    <!-- Formulário de Novo Serviço + Ordem de Serviço -->
-    <section class="bg-white p-5 rounded-2xl card-shadow border border-slate-100">
-      <div class="flex justify-between items-center mb-3">
-        <h2 class="text-sm font-bold text-slate-800">Registrar Serviço & Gerar O.S.</h2>
-        <span class="text-[11px] bg-purple-50 text-purple-700 font-semibold px-2.5 py-0.5 rounded-full">O.S. #<span id="proximoNumeroOS">001</span></span>
-      </div>
-
-      <form id="formServico" onsubmit="adicionarServico(event)" class="space-y-3">
-        <!-- Seleção de Cliente Existente ou Novo -->
-        <div class="bg-purple-50/50 p-3 rounded-2xl border border-purple-100 space-y-2.5">
-          <div class="flex justify-between items-center">
-            <label class="text-xs font-semibold text-purple-900">Cliente *</label>
-            <span class="text-[11px] text-purple-700">Selecione um salvo ou digite um novo</span>
-          </div>
-
-          <select id="selectClienteExistente" onchange="selecionarClienteExistente()" class="w-full bg-white border border-purple-200 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:border-purple-600">
-            <option value="">+ Novo Cliente (digitar abaixo)</option>
-          </select>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            <input type="text" id="cliente" required placeholder="Nome completo do cliente" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-purple-600" />
-            <input type="tel" id="telefoneCliente" placeholder="WhatsApp / Telefone (opcional)" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-purple-600" />
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-xs text-slate-500 mb-1">Aparelho & Serviço Realizado *</label>
-          <input type="text" id="descricao" required placeholder="Ex: Galaxy A16 - Troca de Frontal" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-purple-600" />
-        </div>
-
-        <!-- Tipo de Senha do Aparelho -->
-        <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 space-y-3">
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <label class="text-xs font-semibold text-slate-700">Senha de Desbloqueio do Aparelho</label>
-            <div class="flex gap-1.5">
-              <button type="button" onclick="alternarTipoSenha('texto')" id="btnSenhaTexto" class="text-xs px-3 py-1 rounded-lg font-medium transition bg-purple-700 text-white">
-                PIN / Senha Texto
-              </button>
-              <button type="button" onclick="alternarTipoSenha('padrao')" id="btnSenhaPadrao" class="text-xs px-3 py-1 rounded-lg font-medium transition bg-white border border-slate-200 text-slate-600 hover:border-purple-400">
-                ● Padrão (Bolinhas)
-              </button>
-              <button type="button" onclick="alternarTipoSenha('nenhuma')" id="btnSenhaNenhuma" class="text-xs px-3 py-1 rounded-lg font-medium transition bg-white border border-slate-200 text-slate-600 hover:border-purple-400">
-                Sem Senha
-              </button>
-            </div>
-          </div>
-
-          <div id="boxSenhaTexto">
-            <input type="text" id="senhaAparelho" placeholder="Digite o PIN, senha numérica ou observação..." class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-purple-600" />
-          </div>
-
-          <div id="boxSenhaPadrao" class="hidden flex flex-col items-center py-2">
-            <p class="text-[11px] text-slate-500 mb-2">Arraste ou clique nas bolinhas na ordem do padrão:</p>
-            <canvas id="canvasPadrao" width="210" height="210" class="bg-white border-2 border-purple-200 rounded-2xl touch-none shadow-xs cursor-crosshair"></canvas>
-            <div class="flex items-center justify-between w-full max-w-[210px] mt-2">
-              <span id="textoSequenciaPadrao" class="text-[11px] font-mono text-purple-700 font-semibold">Sequência: —</span>
-              <button type="button" onclick="limparPadrao()" class="text-xs text-rose-600 hover:underline font-medium">Limpar</button>
-            </div>
-          </div>
-
-          <div id="boxSenhaNenhuma" class="hidden text-xs text-slate-400 italic">
-            Aparelho sem senha de bloqueio.
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div>
-            <label class="block text-xs text-slate-500 mb-1">Valor Cobrado *</label>
-            <input type="number" id="valorCobrado" step="0.01" min="0" required placeholder="250.00" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-purple-600" />
-          </div>
-          <div>
-            <label class="block text-xs text-slate-500 mb-1">Custo Peça *</label>
-            <input type="number" id="custoPeca" step="0.01" min="0" required placeholder="90.00" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-purple-600" />
-          </div>
-          <div>
-            <label class="block text-xs text-slate-500 mb-1">Garantia</label>
-            <select id="garantia" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2.5 text-sm focus:outline-none focus:border-purple-600">
-              <option value="90 dias">90 dias (3 meses)</option>
-              <option value="30 dias">30 dias</option>
-              <option value="60 dias">60 dias</option>
-              <option value="6 meses">6 meses</option>
-              <option value="Sem garantia">Sem garantia</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs text-slate-500 mb-1">Data *</label>
-            <input type="date" id="dataServico" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2.5 text-sm focus:outline-none focus:border-purple-600" />
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-xs text-slate-500 mb-1">Observações / Estado do Aparelho (Opcional)</label>
-          <input type="text" id="observacoes" placeholder="Ex: Aparelho entrou com tampa traseira riscada e sem chip." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-purple-600" />
-        </div>
-
-        <button type="submit" class="w-full bg-purple-700 hover:bg-purple-800 text-white font-semibold py-3 rounded-xl text-sm shadow-sm transition active:scale-[0.99]">
-          + Salvar Serviço e Gerar Ordem de Serviço
-        </button>
-      </form>
     </section>
 
     <!-- Lista de Serviços -->
     <section class="space-y-2.5">
       <div class="flex justify-between items-center px-1">
-        <h2 class="text-sm font-bold text-slate-800">Histórico & Ordens de Serviço (<span id="contadorServicos">0</span>)</h2>
-        <span id="ticketMedioBadge" class="text-[11px] bg-slate-200/70 text-slate-600 px-2.5 py-0.5 rounded-full font-medium">Lucro real médio: R$ 0,00</span>
+        <h2 class="text-sm font-bold text-slate-800 dark:text-white">Histórico & Ordens de Serviço (<span id="contadorServicos">0</span>)</h2>
+        <span id="ticketMedioBadge" class="text-[11px] bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2.5 py-0.5 rounded-full font-medium">Lucro real médio: R$ 0,00</span>
       </div>
       <div id="listaServicos" class="space-y-2.5"></div>
     </section>
@@ -333,16 +350,16 @@
   <main id="abaClientes" class="max-w-3xl mx-auto px-4 -mt-5 space-y-5 hidden">
 
     <!-- Cadastrar Cliente Avulso -->
-    <section class="bg-white p-5 rounded-2xl card-shadow border border-slate-100">
-      <h2 class="text-sm font-bold text-slate-800 mb-3">Cadastrar Novo Cliente</h2>
+    <section class="bg-white dark:bg-slate-900 p-5 rounded-2xl card-shadow border border-slate-100 dark:border-slate-800">
+      <h2 class="text-sm font-bold text-slate-800 dark:text-white mb-3">Cadastrar Novo Cliente</h2>
       <form id="formCliente" onsubmit="cadastrarClienteAvulso(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>
-          <label class="block text-xs text-slate-500 mb-1">Nome do Cliente *</label>
-          <input type="text" id="novoClienteNome" required placeholder="Ex: Maria Oliveira" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-purple-600" />
+          <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Nome do Cliente *</label>
+          <input type="text" id="novoClienteNome" required placeholder="Ex: Maria Oliveira" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:border-purple-600" />
         </div>
         <div>
-          <label class="block text-xs text-slate-500 mb-1">WhatsApp / Telefone</label>
-          <input type="tel" id="novoClienteTel" placeholder="Ex: (82) 99999-9999" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-purple-600" />
+          <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">WhatsApp / Telefone</label>
+          <input type="tel" id="novoClienteTel" placeholder="Ex: (82) 99999-9999" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:border-purple-600" />
         </div>
         <div class="flex items-end">
           <button type="submit" class="w-full bg-purple-700 hover:bg-purple-800 text-white font-semibold py-2.5 px-4 rounded-xl text-sm transition">
@@ -355,8 +372,8 @@
     <!-- Busca e Lista de Clientes com Faturamento e Lucro -->
     <section class="space-y-3">
       <div class="flex flex-wrap justify-between items-center gap-2 px-1">
-        <h2 class="text-sm font-bold text-slate-800">Clientes (<span id="contadorClientes">0</span>)</h2>
-        <input type="text" id="buscaCliente" oninput="renderizarClientes()" placeholder="Buscar cliente por nome..." class="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs w-52 focus:outline-none focus:border-purple-600" />
+        <h2 class="text-sm font-bold text-slate-800 dark:text-white">Clientes (<span id="contadorClientes">0</span>)</h2>
+        <input type="text" id="buscaCliente" oninput="renderizarClientes()" placeholder="Buscar cliente por nome..." class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs w-52 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-purple-600" />
       </div>
 
       <div id="listaClientes" class="space-y-3"></div>
@@ -364,78 +381,179 @@
 
   </main>
 
-  <!-- Barra de Navegação Inferior Estilo App Nativo -->
-  <nav class="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-slate-200 barra-abas-nativa z-40">
-    <div class="max-w-3xl mx-auto grid grid-cols-2">
-      <button onclick="trocarAba('servicos')" id="tabBtnServicos" class="py-2.5 flex flex-col items-center justify-center gap-0.5 text-purple-700 font-semibold transition">
-        <span class="text-lg leading-none">🛠️</span>
-        <span class="text-[11px]">Serviços & O.S.</span>
+  <!-- ABA 3: ANÁLISE (GRÁFICO DE BARRAS COLORIDAS) -->
+  <main id="abaAnalise" class="max-w-3xl mx-auto px-4 -mt-5 space-y-5 hidden">
+
+    <section class="bg-white dark:bg-slate-900 p-5 rounded-2xl card-shadow border border-slate-100 dark:border-slate-800">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <div>
+          <h2 class="text-sm font-bold text-slate-800 dark:text-white">Análise de Faturamento Mensal</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Comparativo mês a mês com valores exatos</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <select id="anoAnalise" onchange="renderizarAnalise()" class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:border-purple-600"></select>
+          <select id="tipoMetricaAnalise" onchange="renderizarAnalise()" class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs font-semibold text-purple-700 dark:text-purple-300 focus:outline-none focus:border-purple-600">
+            <option value="faturamento">Faturamento</option>
+            <option value="lucro">Lucro Líquido</option>
+            <option value="custo">Custo Peças</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Resumo do Ano -->
+      <div class="grid grid-cols-2 gap-3 mb-5">
+        <div class="bg-slate-50 dark:bg-slate-800/70 p-3.5 rounded-xl border border-slate-100 dark:border-slate-700">
+          <span class="text-[11px] text-slate-500 dark:text-slate-400 block">Mês com Maior Valor</span>
+          <strong id="analiseMelhorMes" class="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block">—</strong>
+        </div>
+        <div class="bg-slate-50 dark:bg-slate-800/70 p-3.5 rounded-xl border border-slate-100 dark:border-slate-700">
+          <span class="text-[11px] text-slate-500 dark:text-slate-400 block">Total no Ano Selecionado</span>
+          <strong id="analiseTotalAno" class="text-sm font-bold text-purple-700 dark:text-purple-300 mt-0.5 block">R$ 0,00</strong>
+        </div>
+      </div>
+
+      <!-- Gráfico de Barras Coloridas -->
+      <div class="overflow-x-auto pb-2">
+        <div id="graficoBarrasMensal" class="min-w-[600px] h-64 flex items-end justify-between gap-2 pt-8 pb-2 px-2 border-b border-slate-200 dark:border-slate-700">
+          <!-- Barras renderizadas via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Detalhamento Mês a Mês -->
+    <section class="bg-white dark:bg-slate-900 p-5 rounded-2xl card-shadow border border-slate-100 dark:border-slate-800">
+      <h3 class="text-sm font-bold text-slate-800 dark:text-white mb-3">Resumo Detalhado por Mês</h3>
+      <div id="tabelaMesesAnalise" class="divide-y divide-slate-100 dark:divide-slate-800 text-xs"></div>
+    </section>
+
+  </main>
+
+  <!-- ABA 4: CONFIGURAÇÕES -->
+  <main id="abaConfiguracoes" class="max-w-3xl mx-auto px-4 -mt-5 space-y-5 hidden">
+
+    <!-- Aparência (Tema Escuro / Claro) -->
+    <section class="bg-white dark:bg-slate-900 p-5 rounded-2xl card-shadow border border-slate-100 dark:border-slate-800">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <h2 class="text-sm font-bold text-slate-800 dark:text-white">Aparência do Aplicativo</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Escolha entre tela clara ou tela escura</p>
+        </div>
+        <button type="button" onclick="alternarTema()" id="btnTemaConfig" class="bg-purple-700 hover:bg-purple-800 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition">
+          Alternar Tema
+        </button>
+      </div>
+    </section>
+
+    <!-- Dados da Loja & Termo de Garantia -->
+    <section class="bg-white dark:bg-slate-900 p-5 rounded-2xl card-shadow border border-slate-100 dark:border-slate-800 space-y-3">
+      <h2 class="text-sm font-bold text-slate-800 dark:text-white">Dados da Assistência & Termo de Garantia</h2>
+      <div>
+        <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Nome da Assistência</label>
+        <input type="text" id="cfgNomeLoja" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-slate-100" />
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Telefone / WhatsApp</label>
+          <input type="text" id="cfgTelefoneLoja" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-slate-100" />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Instagram / Cidade</label>
+          <input type="text" id="cfgInfoExtra" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-slate-100" />
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Termo de Garantia (Aparece na O.S. A4)</label>
+        <textarea id="cfgTermoGarantia" rows="5" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-100 leading-relaxed"></textarea>
+      </div>
+      <button type="button" onclick="salvarConfigLoja()" class="w-full bg-purple-700 hover:bg-purple-800 text-white font-semibold py-2.5 rounded-xl text-sm transition">
+        Salvar Dados da Loja
       </button>
-      <button onclick="trocarAba('clientes')" id="tabBtnClientes" class="py-2.5 flex flex-col items-center justify-center gap-0.5 text-slate-400 font-medium transition">
-        <span class="text-lg leading-none">👥</span>
-        <span class="text-[11px]">Clientes</span>
+    </section>
+
+    <!-- Backup: Exportar e Importar -->
+    <section class="bg-white dark:bg-slate-900 p-5 rounded-2xl card-shadow border border-slate-100 dark:border-slate-800 space-y-3">
+      <div>
+        <h2 class="text-sm font-bold text-slate-800 dark:text-white">Backup de Dados (Exportar e Importar)</h2>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Guarde seus serviços, clientes e metas ou restaure um arquivo JSON salvo</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <button type="button" onclick="exportarBackup()" class="w-full bg-purple-700 hover:bg-purple-800 text-white font-semibold py-3 px-4 rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2 transition">
+          <span>⬆️ Exportar Backup (Guardar)</span>
+        </button>
+
+        <label class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-4 rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer transition">
+          <span>⬇️ Importar Backup (Restaurar)</span>
+          <input type="file" id="inputImportarBackup" accept=".json,application/json" onchange="importarBackup(event)" class="hidden" />
+        </label>
+      </div>
+      <p id="statusBackup" class="text-[11px] text-slate-500 dark:text-slate-400"></p>
+    </section>
+
+    <!-- Sair do Aplicativo -->
+    <section class="bg-white dark:bg-slate-900 p-5 rounded-2xl card-shadow border border-rose-100 dark:border-rose-900/40">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <h2 class="text-sm font-bold text-rose-600 dark:text-rose-400">Encerrar Sessão</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Sair ou fechar o aplicativo</p>
+        </div>
+        <button type="button" onclick="sairDoAplicativo()" class="bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition">
+          Sair do App
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Barra de Navegação Inferior (4 Abas) -->
+  <nav class="fixed bottom-0 inset-x-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 barra-abas-nativa z-40">
+    <div class="max-w-3xl mx-auto grid grid-cols-4">
+      <button type="button" onclick="trocarAba('servicos')" id="tabBtnServicos" class="py-2 flex flex-col items-center justify-center gap-0.5 text-purple-700 dark:text-purple-400 font-semibold transition">
+        <span class="text-base leading-none">🛠️</span>
+        <span class="text-[10px]">Serviços</span>
+      </button>
+      <button type="button" onclick="trocarAba('clientes')" id="tabBtnClientes" class="py-2 flex flex-col items-center justify-center gap-0.5 text-slate-400 font-medium transition">
+        <span class="text-base leading-none">👥</span>
+        <span class="text-[10px]">Clientes</span>
+      </button>
+      <button type="button" onclick="trocarAba('analise')" id="tabBtnAnalise" class="py-2 flex flex-col items-center justify-center gap-0.5 text-slate-400 font-medium transition">
+        <span class="text-base leading-none">📊</span>
+        <span class="text-[10px]">Análise</span>
+      </button>
+      <button type="button" onclick="trocarAba('configuracoes')" id="tabBtnConfiguracoes" class="py-2 flex flex-col items-center justify-center gap-0.5 text-slate-400 font-medium transition">
+        <span class="text-base leading-none">⚙️</span>
+        <span class="text-[10px]">Config</span>
       </button>
     </div>
   </nav>
 
-  <!-- Modal de Pré-visualização da Ordem de Serviço A4 -->
+  <!-- Modal de Pré-visualização da Ordem de Serviço A4 (Folha Única Padrão A4) -->
   <div id="modalOS" class="fixed inset-0 bg-slate-900/75 backdrop-blur-xs z-50 hidden flex flex-col items-center justify-center p-3 sm:p-6">
-    <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+    <div class="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] border border-slate-200 dark:border-slate-800">
       <div class="bg-slate-900 text-white px-4 py-3 flex justify-between items-center">
         <div>
           <h3 class="text-sm font-bold">Ordem de Serviço #<span id="modalNumOS">001</span></h3>
-          <p class="text-[11px] text-slate-300">Formato Padrão A4 (Pronto para Salvar na Galeria ou Imprimir)</p>
+          <p class="text-[11px] text-slate-300">Folha Única Padrão A4 (210mm x 297mm)</p>
         </div>
-        <button onclick="fecharModalOS()" class="text-slate-300 hover:text-white text-sm font-bold px-2 py-1">✕ Fechar</button>
+        <button type="button" onclick="fecharModalOS()" class="text-slate-300 hover:text-white text-sm font-bold px-2 py-1">✕ Fechar</button>
       </div>
 
-      <div class="p-4 overflow-y-auto bg-slate-200 flex-1 flex justify-center">
-        <div id="previewContainer" class="bg-white shadow-md w-full max-w-[540px] p-5 text-[11px] text-slate-800 border border-slate-300 rounded"></div>
+      <div class="p-4 overflow-y-auto bg-slate-200 dark:bg-slate-950 flex-1 flex justify-center">
+        <div id="previewContainer" class="bg-white shadow-md w-full max-w-[460px] p-5 text-[11px] text-slate-900 border border-slate-300 rounded"></div>
       </div>
 
-      <div class="p-4 bg-white border-t border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-        <button id="btnBaixarA4" onclick="baixarOrdemServicoA4()" class="w-full bg-purple-700 hover:bg-purple-800 text-white font-semibold py-3 px-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-sm transition">
-          <span>📥 Baixar Ordem de Serviço (A4 na Galeria)</span>
+      <div class="p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        <button type="button" id="btnBaixarA4" onclick="baixarOrdemServicoA4()" class="w-full bg-purple-700 hover:bg-purple-800 text-white font-semibold py-3 px-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-sm transition">
+          <span>📥 Salvar A4 na Galeria</span>
         </button>
-        <button onclick="imprimirOrdemServico()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold py-3 px-4 rounded-xl text-sm flex items-center justify-center gap-2 transition">
-          <span>🖨️ Imprimir / Salvar PDF</span>
+        <button type="button" onclick="imprimirOrdemServico()" class="w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 font-semibold py-3 px-4 rounded-xl text-sm flex items-center justify-center gap-2 transition">
+          <span>🖨️ Imprimir O.S. (A4)</span>
         </button>
       </div>
     </div>
   </div>
 
-  <!-- Modal Configurações da Loja e Termo de Garantia -->
-  <div id="modalConfig" class="fixed inset-0 bg-slate-900/75 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl p-5 space-y-3 max-h-[90vh] overflow-y-auto">
-      <div class="flex justify-between items-center border-b border-slate-100 pb-2">
-        <h3 class="text-base font-bold text-slate-800">Configurar Dados da O.S.</h3>
-        <button onclick="fecharConfigLoja()" class="text-slate-400 hover:text-slate-700 font-bold">✕</button>
-      </div>
-      <div>
-        <label class="block text-xs text-slate-500 mb-1">Nome da Assistência</label>
-        <input type="text" id="cfgNomeLoja" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm" />
-      </div>
-      <div class="grid grid-cols-2 gap-2">
-        <div>
-          <label class="block text-xs text-slate-500 mb-1">Telefone / WhatsApp</label>
-          <input type="text" id="cfgTelefoneLoja" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm" />
-        </div>
-        <div>
-          <label class="block text-xs text-slate-500 mb-1">Instagram / Cidade</label>
-          <input type="text" id="cfgInfoExtra" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm" />
-        </div>
-      </div>
-      <div>
-        <label class="block text-xs text-slate-500 mb-1">Termo de Garantia (Aparece no rodapé da O.S.)</label>
-        <textarea id="cfgTermoGarantia" rows="5" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs leading-relaxed"></textarea>
-      </div>
-      <button onclick="salvarConfigLoja()" class="w-full bg-purple-700 text-white font-semibold py-2.5 rounded-xl text-sm">
-        Salvar Configurações
-      </button>
-    </div>
-  </div>
-
-  <!-- Área Oculta em Tamanho Real A4 (794px x 1123px) para Exportação em Alta Qualidade -->
+  <!-- Área Oculta em Tamanho Real A4 (794px x 1123px) para Exportação / Impressão em Folha Única -->
   <div id="areaImpressaoWrapper">
     <div id="folhaA4Real" class="folha-a4"></div>
   </div>
@@ -448,11 +566,13 @@
       termoGarantia: '1. A garantia cobre exclusivamente defeitos de fabricação da peça substituída ou falha na mão de obra realizada, pelo prazo estipulado nesta Ordem de Serviço.\n2. A garantia será automaticamente anulada em caso de: queda, impacto, tela trincada/quebrada, contato com líquidos/umidade, sinais de oxidação, rompimento do selo de garantia ou abertura por terceiros.\n3. Aparelhos não retirados no prazo máximo de 90 dias após a conclusão do serviço estarão sujeitos à cobrança de taxa de armazenamento ou descarte/venda para custeio das peças conforme legislação vigente.\n4. Não nos responsabilizamos por perda de dados, chips ou cartões de memória; recomendamos backup prévio.'
     };
 
-    let configLoja = JSON.parse(localStorage.getItem('assistencia_config_loja')) || configPadrao;
+    let configLoja = JSON.parse(localStorage.getItem('assistencia_config_loja')) || { ...configPadrao };
     let servicos = JSON.parse(localStorage.getItem('assistencia_servicos')) || [];
     let clientes = JSON.parse(localStorage.getItem('assistencia_clientes')) || [];
     let metaMensal = parseFloat(localStorage.getItem('assistencia_meta')) || 3000;
     let lucroMedioManual = localStorage.getItem('assistencia_lucro_medio_manual') || '';
+    let temaEscuro = localStorage.getItem('assistencia_tema_escuro') === 'true';
+    let formularioOSAberto = false;
     let servicoSelecionadoOS = null;
 
     let tipoSenhaAtual = 'texto';
@@ -463,11 +583,93 @@
     const canvasPadrao = document.getElementById('canvasPadrao');
     const ctxPadrao = canvasPadrao.getContext('2d');
 
-    const formatarMoeda = (valor) => {
-      return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const nomesMeses = {
+      '01': 'Jan', '02': 'Fev', '03': 'Mar', '04': 'Abr',
+      '05': 'Mai', '06': 'Jun', '07': 'Jul', '08': 'Ago',
+      '09': 'Set', '10': 'Out', '11': 'Nov', '12': 'Dez'
     };
 
-    // Sincroniza clientes existentes com os serviços já registrados
+    const nomesMesesCompleto = {
+      '01': 'Janeiro', '02': 'Fevereiro', '03': 'Março', '04': 'Abril',
+      '05': 'Maio', '06': 'Junho', '07': 'Julho', '08': 'Agosto',
+      '09': 'Setembro', '10': 'Outubro', '11': 'Novembro', '12': 'Dezembro'
+    };
+
+    const coresBarras = [
+      'bg-purple-600', 'bg-indigo-600', 'bg-blue-600', 'bg-cyan-600',
+      'bg-teal-600', 'bg-emerald-600', 'bg-lime-600', 'bg-amber-500',
+      'bg-orange-500', 'bg-rose-500', 'bg-pink-600', 'bg-violet-600'
+    ];
+
+    const formatarMoeda = (valor) => {
+      return Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    };
+
+    // --- Tema Claro / Escuro ---
+    function aplicarTema() {
+      const htmlEl = document.documentElement;
+      if (temaEscuro) {
+        htmlEl.classList.add('dark');
+        document.getElementById('btnTemaTopo').innerText = '☀️ Claro';
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', '#4c1d95');
+      } else {
+        htmlEl.classList.remove('dark');
+        document.getElementById('btnTemaTopo').innerText = '🌙 Escuro';
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', '#6d28d9');
+      }
+      localStorage.setItem('assistencia_tema_escuro', String(temaEscuro));
+    }
+
+    function alternarTema() {
+      temaEscuro = !temaEscuro;
+      aplicarTema();
+    }
+
+    // --- Abrir/Fechar Formulário de Nova O.S. ---
+    function toggleFormularioOS(forcarEstado = null) {
+      formularioOSAberto = forcarEstado !== null ? forcarEstado : !formularioOSAberto;
+      const container = document.getElementById('containerFormularioOS');
+      const btn = document.getElementById('btnToggleOS');
+
+      container.classList.toggle('hidden', !formularioOSAberto);
+      btn.innerText = formularioOSAberto ? '✕ Fechar formulário' : '+ Criar uma nova ordem de serviço';
+      if (formularioOSAberto) {
+        btn.className = 'bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs font-semibold px-4 py-2.5 rounded-xl transition';
+        if (tipoSenhaAtual === 'padrao') {
+          setTimeout(() => desenharGradePadrao(null), 30);
+        }
+      } else {
+        btn.className = 'bg-purple-700 hover:bg-purple-800 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-sm transition active:scale-[0.98]';
+      }
+    }
+
+    // --- Abas ---
+    function trocarAba(aba) {
+      const abas = {
+        servicos: { el: 'abaServicos', btn: 'tabBtnServicos', sub: 'Controle Financeiro & Ordem de Serviço' },
+        clientes: { el: 'abaClientes', btn: 'tabBtnClientes', sub: 'Faturamento e Lucro por Cliente' },
+        analise: { el: 'abaAnalise', btn: 'tabBtnAnalise', sub: 'Gráfico Comparativo Mensal' },
+        configuracoes: { el: 'abaConfiguracoes', btn: 'tabBtnConfiguracoes', sub: 'Configurações, Backup e Aparência' }
+      };
+
+      Object.keys(abas).forEach((key) => {
+        const ativa = key === aba;
+        document.getElementById(abas[key].el).classList.toggle('hidden', !ativa);
+        document.getElementById(abas[key].btn).className = ativa
+          ? 'py-2 flex flex-col items-center justify-center gap-0.5 text-purple-700 dark:text-purple-400 font-semibold transition'
+          : 'py-2 flex flex-col items-center justify-center gap-0.5 text-slate-400 font-medium transition';
+        if (ativa) {
+          document.getElementById('subtituloHeader').innerText = abas[key].sub;
+        }
+      });
+
+      if (aba === 'clientes') renderizarClientes();
+      if (aba === 'analise') renderizarAnalise();
+      if (aba === 'configuracoes') carregarCamposConfiguracao();
+      if (aba === 'servicos') atualizarSelectClientes();
+    }
+
+    // --- Sincronização de Clientes ---
     function sincronizarClientesComServicos() {
       let alterou = false;
       servicos.forEach(s => {
@@ -485,30 +687,6 @@
       });
       if (alterou) {
         localStorage.setItem('assistencia_clientes', JSON.stringify(clientes));
-      }
-    }
-
-    function trocarAba(aba) {
-      const isServicos = aba === 'servicos';
-      document.getElementById('abaServicos').classList.toggle('hidden', !isServicos);
-      document.getElementById('abaClientes').classList.toggle('hidden', isServicos);
-
-      document.getElementById('tabBtnServicos').className = isServicos
-        ? 'py-2.5 flex flex-col items-center justify-center gap-0.5 text-purple-700 font-semibold transition'
-        : 'py-2.5 flex flex-col items-center justify-center gap-0.5 text-slate-400 font-medium transition';
-
-      document.getElementById('tabBtnClientes').className = !isServicos
-        ? 'py-2.5 flex flex-col items-center justify-center gap-0.5 text-purple-700 font-semibold transition'
-        : 'py-2.5 flex flex-col items-center justify-center gap-0.5 text-slate-400 font-medium transition';
-
-      document.getElementById('subtituloHeader').innerText = isServicos
-        ? 'Controle Financeiro & Ordem de Serviço'
-        : 'Histórico de Compras, Faturamento e Lucro por Cliente';
-
-      if (!isServicos) {
-        renderizarClientes();
-      } else {
-        atualizarSelectClientes();
       }
     }
 
@@ -558,8 +736,6 @@
 
     function renderizarClientes() {
       const busca = (document.getElementById('buscaCliente')?.value || '').trim().toLowerCase();
-
-      // Calcula métricas por cliente com base nos serviços salvos
       const mapaStats = new Map();
 
       clientes.forEach(c => {
@@ -570,8 +746,7 @@
           qtdServicos: 0,
           faturamento: 0,
           custo: 0,
-          lucro: 0,
-          servicos: []
+          lucro: 0
         });
       });
 
@@ -587,8 +762,7 @@
             qtdServicos: 0,
             faturamento: 0,
             custo: 0,
-            lucro: 0,
-            servicos: []
+            lucro: 0
           });
         }
         const stat = mapaStats.get(chave);
@@ -597,15 +771,12 @@
         stat.custo += Number(s.custoPeca || 0);
         stat.lucro += Number(s.lucro ?? (Number(s.valorCobrado || 0) - Number(s.custoPeca || 0)));
         if (!stat.telefone && s.telefoneCliente) stat.telefone = s.telefoneCliente;
-        stat.servicos.push(s);
       });
 
       let lista = Array.from(mapaStats.values());
       if (busca) {
         lista = lista.filter(item => item.nome.toLowerCase().includes(busca));
       }
-
-      // Ordena por maior faturamento
       lista.sort((a, b) => b.faturamento - a.faturamento);
 
       document.getElementById('contadorClientes').innerText = lista.length;
@@ -613,38 +784,38 @@
       const container = document.getElementById('listaClientes');
       if (lista.length === 0) {
         container.innerHTML = `
-          <div class="bg-white p-8 rounded-2xl text-center border border-slate-100 text-slate-400 text-sm">
+          <div class="bg-white dark:bg-slate-900 p-8 rounded-2xl text-center border border-slate-100 dark:border-slate-800 text-slate-400 text-sm">
             Nenhum cliente encontrado.
           </div>`;
         return;
       }
 
       container.innerHTML = lista.map(item => `
-        <div class="bg-white p-4 rounded-2xl card-shadow border border-slate-100 space-y-3">
+        <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl card-shadow border border-slate-100 dark:border-slate-800 space-y-3">
           <div class="flex justify-between items-start gap-2">
             <div>
-              <h3 class="font-bold text-slate-800 text-sm">${item.nome}</h3>
-              <p class="text-xs text-slate-500 mt-0.5">
-                ${item.telefone ? `📱 ${item.telefone} • ` : ''}<strong>${item.qtdServicos}</strong> serviço(s) / compra(s)
+              <h3 class="font-bold text-slate-800 dark:text-white text-sm">${item.nome}</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                ${item.telefone ? `📱 ${item.telefone} • ` : ''}<strong>${item.qtdServicos}</strong> compra(s)/serviço(s)
               </p>
             </div>
-            <button onclick="usarClienteNaOS('${item.nome.replace(/'/g, "\\'")}')" class="bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-semibold px-3 py-1.5 rounded-lg transition">
+            <button type="button" onclick="usarClienteNaOS('${item.nome.replace(/'/g, "\\'")}')" class="bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 text-purple-700 dark:text-purple-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition">
               + Nova O.S.
             </button>
           </div>
 
-          <div class="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100">
-            <div class="bg-slate-50 p-2.5 rounded-xl">
-              <span class="text-[10px] text-slate-500 block">Total Comprado</span>
-              <strong class="text-xs sm:text-sm font-bold text-slate-800">${formatarMoeda(item.faturamento)}</strong>
+          <div class="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <div class="bg-slate-50 dark:bg-slate-800/70 p-2.5 rounded-xl">
+              <span class="text-[10px] text-slate-500 dark:text-slate-400 block">Total Comprado</span>
+              <strong class="text-xs sm:text-sm font-bold text-slate-800 dark:text-white">${formatarMoeda(item.faturamento)}</strong>
             </div>
-            <div class="bg-slate-50 p-2.5 rounded-xl">
-              <span class="text-[10px] text-slate-500 block">Faturamento</span>
-              <strong class="text-xs sm:text-sm font-bold text-slate-800">${formatarMoeda(item.faturamento)}</strong>
+            <div class="bg-slate-50 dark:bg-slate-800/70 p-2.5 rounded-xl">
+              <span class="text-[10px] text-slate-500 dark:text-slate-400 block">Faturamento</span>
+              <strong class="text-xs sm:text-sm font-bold text-slate-800 dark:text-white">${formatarMoeda(item.faturamento)}</strong>
             </div>
-            <div class="bg-purple-50 p-2.5 rounded-xl">
-              <span class="text-[10px] text-purple-700 block">Lucro Gerado</span>
-              <strong class="text-xs sm:text-sm font-bold ${item.lucro >= 0 ? 'text-purple-800' : 'text-rose-600'}">${formatarMoeda(item.lucro)}</strong>
+            <div class="bg-purple-50 dark:bg-purple-950/50 p-2.5 rounded-xl">
+              <span class="text-[10px] text-purple-700 dark:text-purple-300 block">Lucro Gerado</span>
+              <strong class="text-xs sm:text-sm font-bold ${item.lucro >= 0 ? 'text-purple-800 dark:text-purple-200' : 'text-rose-600'}">${formatarMoeda(item.lucro)}</strong>
             </div>
           </div>
         </div>
@@ -653,10 +824,109 @@
 
     function usarClienteNaOS(nomeCliente) {
       trocarAba('servicos');
+      toggleFormularioOS(true);
       atualizarSelectClientes(nomeCliente);
       selecionarClienteExistente();
       document.getElementById('cliente').value = nomeCliente;
       document.getElementById('descricao').focus();
+    }
+
+    // --- Aba Análise (Gráfico de Barras Mensais) ---
+    function popularAnosAnalise() {
+      const anoAtual = new Date().getFullYear();
+      const anosSet = new Set([anoAtual, anoAtual - 1, anoAtual + 1]);
+      servicos.forEach(s => {
+        if (s.data) {
+          const ano = parseInt(s.data.split('-')[0], 10);
+          if (!isNaN(ano)) anosSet.add(ano);
+        }
+      });
+      const anosOrdenados = Array.from(anosSet).sort((a, b) => b - a);
+      const selectAno = document.getElementById('anoAnalise');
+      const valorAtual = selectAno.value;
+      selectAno.innerHTML = anosOrdenados.map(a => `<option value="${a}">${a}</option>`).join('');
+      if (valorAtual && anosOrdenados.includes(parseInt(valorAtual, 10))) {
+        selectAno.value = valorAtual;
+      } else {
+        selectAno.value = String(anoAtual);
+      }
+    }
+
+    function renderizarAnalise() {
+      popularAnosAnalise();
+      const anoSel = document.getElementById('anoAnalise').value;
+      const metrica = document.getElementById('tipoMetricaAnalise').value;
+
+      const mesesChaves = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
+      const dadosMeses = mesesChaves.map((m, idx) => {
+        const doMes = servicos.filter(s => {
+          if (!s.data) return false;
+          const [a, mes] = s.data.split('-');
+          return a === anoSel && mes === m;
+        });
+
+        const faturamento = doMes.reduce((acc, s) => acc + Number(s.valorCobrado || 0), 0);
+        const custo = doMes.reduce((acc, s) => acc + Number(s.custoPeca || 0), 0);
+        const lucro = doMes.reduce((acc, s) => acc + Number(s.lucro ?? (Number(s.valorCobrado || 0) - Number(s.custoPeca || 0))), 0);
+
+        const valorMetrica = metrica === 'lucro' ? lucro : (metrica === 'custo' ? custo : faturamento);
+
+        return {
+          mes: m,
+          nomeCurto: nomesMeses[m],
+          nomeCompleto: nomesMesesCompleto[m],
+          faturamento,
+          custo,
+          lucro,
+          valor: valorMetrica,
+          qtd: doMes.length,
+          cor: coresBarras[idx % coresBarras.length]
+        };
+      });
+
+      const maiorValor = Math.max(...dadosMeses.map(d => Math.max(0, d.valor)), 0);
+      const totalAno = dadosMeses.reduce((acc, d) => acc + d.valor, 0);
+
+      let melhorItem = null;
+      dadosMeses.forEach(d => {
+        if (d.valor > 0 && (!melhorItem || d.valor > melhorItem.valor)) {
+          melhorItem = d;
+        }
+      });
+
+      document.getElementById('analiseTotalAno').innerText = formatarMoeda(totalAno);
+      document.getElementById('analiseMelhorMes').innerText = melhorItem
+        ? `${melhorItem.nomeCompleto} (${formatarMoeda(melhorItem.valor)})`
+        : 'Sem registros no ano';
+
+      const graficoEl = document.getElementById('graficoBarrasMensal');
+      graficoEl.innerHTML = dadosMeses.map(d => {
+        const alturaPct = maiorValor > 0 ? Math.max(4, (Math.max(0, d.valor) / maiorValor) * 100) : 3;
+        return `
+          <div class="flex-1 flex flex-col items-center justify-end h-full min-w-[44px]">
+            <span class="text-[9px] font-bold text-slate-700 dark:text-slate-200 mb-1 whitespace-nowrap">
+              ${d.valor > 0 ? formatarMoeda(d.valor).replace(',00', '') : 'R$ 0'}
+            </span>
+            <div class="w-full max-w-[30px] rounded-t-lg transition-all duration-500 ${d.valor > 0 ? d.cor : 'bg-slate-200 dark:bg-slate-800'}" style="height: ${alturaPct}%;"></div>
+            <span class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 mt-2">${d.nomeCurto}</span>
+          </div>
+        `;
+      }).join('');
+
+      const tabelaEl = document.getElementById('tabelaMesesAnalise');
+      tabelaEl.innerHTML = dadosMeses.map(d => `
+        <div class="py-2.5 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full ${d.cor}"></span>
+            <span class="font-semibold text-slate-700 dark:text-slate-200">${d.nomeCompleto}</span>
+            <span class="text-[11px] text-slate-400">(${d.qtd} serv.)</span>
+          </div>
+          <div class="flex items-center gap-3 text-right">
+            <span class="text-slate-500 dark:text-slate-400">Fat: <strong class="text-slate-800 dark:text-slate-100">${formatarMoeda(d.faturamento)}</strong></span>
+            <span class="text-purple-700 dark:text-purple-300">Lucro: <strong>${formatarMoeda(d.lucro)}</strong></span>
+          </div>
+        </div>
+      `).join('');
     }
 
     // --- Padrão de Bolinhas 3x3 ---
@@ -777,7 +1047,7 @@
       const btnNenhuma = document.getElementById('btnSenhaNenhuma');
 
       const ativo = 'text-xs px-3 py-1 rounded-lg font-medium transition bg-purple-700 text-white';
-      const inativo = 'text-xs px-3 py-1 rounded-lg font-medium transition bg-white border border-slate-200 text-slate-600 hover:border-purple-400';
+      const inativo = 'text-xs px-3 py-1 rounded-lg font-medium transition bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-purple-400';
 
       btnTexto.className = tipo === 'texto' ? ativo : inativo;
       btnPadrao.className = tipo === 'padrao' ? ativo : inativo;
@@ -792,10 +1062,10 @@
       }
     }
 
-    function gerarSVGPadrao(sequencia, tamanho = 76) {
+    function gerarSVGPadrao(sequencia, tamanho = 84) {
       if (!sequencia || sequencia.length === 0) return '';
-      const cols = [15, 38, 61];
-      const rows = [15, 38, 61];
+      const cols = [16, 42, 68];
+      const rows = [16, 42, 68];
       const pontos = [];
       let n = 1;
       for (let r = 0; r < 3; r++) {
@@ -809,17 +1079,17 @@
         const p1 = pontos.find(p => p.num === sequencia[i]);
         const p2 = pontos.find(p => p.num === sequencia[i + 1]);
         if (p1 && p2) {
-          linhasSVG += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="#111" stroke-width="2.2" stroke-linecap="round" />`;
+          linhasSVG += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="#111" stroke-width="2.5" stroke-linecap="round" />`;
         }
       }
 
       let bolinhasSVG = pontos.map(p => {
         const ativa = sequencia.includes(p.num);
-        return `<circle cx="${p.x}" cy="${p.y}" r="${ativa ? 4.5 : 3}" fill="${ativa ? '#111' : '#fff'}" stroke="#111" stroke-width="1.5" />`;
+        return `<circle cx="${p.x}" cy="${p.y}" r="${ativa ? 5 : 3.5}" fill="${ativa ? '#111' : '#fff'}" stroke="#111" stroke-width="1.5" />`;
       }).join('');
 
       return `
-        <svg width="${tamanho}" height="${tamanho}" viewBox="0 0 76 76" style="background:#fafafa;border:1px solid #999;border-radius:6px;display:inline-block;vertical-align:middle;">
+        <svg width="${tamanho}" height="${tamanho}" viewBox="0 0 84 84" style="background:#fafafa;border:1px solid #999;border-radius:8px;display:inline-block;vertical-align:middle;">
           ${linhasSVG}
           ${bolinhasSVG}
         </svg>
@@ -828,11 +1098,12 @@
 
     function gerarNumeroOS() {
       if (servicos.length === 0) return '001';
-      const maior = servicos.reduce((max, s) => Math.max(max, parseInt(s.numeroOS || 0)), 0);
+      const maior = servicos.reduce((max, s) => Math.max(max, parseInt(s.numeroOS || 0, 10) || 0), 0);
       return String(maior + 1).padStart(3, '0');
     }
 
     function inicializar() {
+      aplicarTema();
       sincronizarClientesComServicos();
       calcularGradePadrao();
       desenharGradePadrao(null);
@@ -856,6 +1127,7 @@
       document.getElementById('filtroMes').value = mesAtual;
 
       atualizarSelectClientes();
+      carregarCamposConfiguracao();
       atualizarTela();
     }
 
@@ -925,7 +1197,6 @@
       const cliente = document.getElementById('cliente').value.trim();
       const telefoneCliente = document.getElementById('telefoneCliente').value.trim();
 
-      // Salva/atualiza automaticamente na base de clientes
       if (cliente) {
         const existente = clientes.find(c => c.nome.toLowerCase() === cliente.toLowerCase());
         if (existente) {
@@ -952,8 +1223,8 @@
         senhaAparelho = padraoDesenhado.length > 0 ? `Padrão (${padraoDesenhado.join('-')})` : 'Padrão não desenhado';
       }
 
-      const valorCobrado = parseFloat(document.getElementById('valorCobrado').value);
-      const custoPeca = parseFloat(document.getElementById('custoPeca').value);
+      const valorCobrado = parseFloat(document.getElementById('valorCobrado').value) || 0;
+      const custoPeca = parseFloat(document.getElementById('custoPeca').value) || 0;
       const garantia = document.getElementById('garantia').value;
       const data = document.getElementById('dataServico').value;
       const observacoes = document.getElementById('observacoes').value.trim();
@@ -988,6 +1259,7 @@
       document.getElementById('observacoes').value = '';
       limparPadrao();
       alternarTipoSenha('texto');
+      toggleFormularioOS(false);
 
       atualizarSelectClientes();
       atualizarTela();
@@ -1011,7 +1283,7 @@
 
       const filtrados = servicos.filter(s => {
         if (diaFiltro) return s.data === diaFiltro;
-        const [ano, mes] = s.data.split('-');
+        const [ano, mes] = (s.data || '').split('-');
         const bateAno = anoFiltro === 'todos' || ano === anoFiltro;
         const bateMes = mesFiltro === 'todos' || mes === mesFiltro;
         return bateAno && bateMes;
@@ -1022,9 +1294,9 @@
       let lucroTotal = 0;
 
       filtrados.forEach(s => {
-        faturamentoTotal += s.valorCobrado;
-        custoTotal += s.custoPeca;
-        lucroTotal += s.lucro;
+        faturamentoTotal += Number(s.valorCobrado || 0);
+        custoTotal += Number(s.custoPeca || 0);
+        lucroTotal += Number(s.lucro ?? (Number(s.valorCobrado || 0) - Number(s.custoPeca || 0)));
       });
 
       document.getElementById('resumoFaturamento').innerText = formatarMoeda(faturamentoTotal);
@@ -1043,7 +1315,7 @@
       if (!usandoManual) {
         btnAuto.className = 'text-[11px] px-2.5 py-1 rounded-lg font-medium transition bg-purple-700 text-white';
       } else {
-        btnAuto.className = 'text-[11px] px-2.5 py-1 rounded-lg font-medium transition bg-white border border-slate-200 text-slate-600 hover:border-purple-400';
+        btnAuto.className = 'text-[11px] px-2.5 py-1 rounded-lg font-medium transition bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-purple-400';
       }
 
       const percentual = metaMensal > 0 ? Math.min(100, Math.max(0, (lucroTotal / metaMensal) * 100)) : 0;
@@ -1057,7 +1329,7 @@
       if (metaMensal <= 0) {
         boxPrevisao.innerHTML = 'Defina um valor de meta acima para acompanhar sua projeção.';
       } else if (lucroTotal >= metaMensal) {
-        boxPrevisao.innerHTML = `<span class="font-bold text-purple-800">Parabéns!</span> Você bateu sua meta de <strong>${formatarMoeda(metaMensal)}</strong> com <strong>${filtrados.length}</strong> serviço(s) realizado(s).`;
+        boxPrevisao.innerHTML = `<span class="font-bold text-purple-800 dark:text-purple-300">Parabéns!</span> Você bateu sua meta de <strong>${formatarMoeda(metaMensal)}</strong> com <strong>${filtrados.length}</strong> serviço(s) realizado(s).`;
       } else if (lucroBaseCalculo <= 0) {
         boxPrevisao.innerHTML = `Faltam <strong>${formatarMoeda(faltaValor)}</strong>. Digite um valor no campo <strong>Lucro/Serviço</strong> acima (ou escolha R$ 80, R$ 120, R$ 150) para calcular quantos reparos você precisa fazer.`;
       } else {
@@ -1065,52 +1337,53 @@
         const totalMetaServicos = Math.ceil(metaMensal / lucroBaseCalculo);
         const origemTexto = usandoManual ? 'lucro escolhido de' : 'lucro real médio de';
 
-        boxPrevisao.innerHTML = `Considerando um ${origemTexto} <strong>${formatarMoeda(lucroBaseCalculo)}</strong> por aparelho, você precisa de mais <strong class="text-purple-800 text-sm">${servicosNecessarios} serviço(s)</strong> para bater a meta (total de ${totalMetaServicos} serviços para atingir ${formatarMoeda(metaMensal)}).`;
+        boxPrevisao.innerHTML = `Considerando um ${origemTexto} <strong>${formatarMoeda(lucroBaseCalculo)}</strong> por aparelho, você precisa de mais <strong class="text-purple-800 dark:text-purple-300 text-sm">${servicosNecessarios} serviço(s)</strong> para bater a meta (total de ${totalMetaServicos} serviços para atingir ${formatarMoeda(metaMensal)}).`;
       }
 
       const listaEl = document.getElementById('listaServicos');
       if (filtrados.length === 0) {
         listaEl.innerHTML = `
-          <div class="bg-white p-8 rounded-2xl text-center border border-slate-100 text-slate-400 text-sm">
+          <div class="bg-white dark:bg-slate-900 p-8 rounded-2xl text-center border border-slate-100 dark:border-slate-800 text-slate-400 text-sm">
             Nenhum serviço encontrado para este filtro.
           </div>`;
         return;
       }
 
       listaEl.innerHTML = filtrados.map(s => {
-        const dataFormatada = s.data.split('-').reverse().join('/');
+        const dataFormatada = (s.data || '').split('-').reverse().join('/');
         const numOS = s.numeroOS || '001';
+        const lucroItem = Number(s.lucro ?? (Number(s.valorCobrado || 0) - Number(s.custoPeca || 0)));
         return `
-          <div class="bg-white p-4 rounded-2xl card-shadow border border-slate-100 space-y-3">
+          <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl card-shadow border border-slate-100 dark:border-slate-800 space-y-3">
             <div class="flex justify-between items-start gap-3">
               <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center gap-1.5">
-                  <span class="text-[11px] font-bold bg-purple-100 text-purple-800 px-2 py-0.5 rounded-md">O.S. #${numOS}</span>
-                  <span class="text-[11px] font-medium bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">${dataFormatada}</span>
-                  <span class="text-[11px] font-medium bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md">Garantia: ${s.garantia || '90 dias'}</span>
+                  <span class="text-[11px] font-bold bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 px-2 py-0.5 rounded-md">O.S. #${numOS}</span>
+                  <span class="text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-md">${dataFormatada}</span>
+                  <span class="text-[11px] font-medium bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-md">Garantia: ${s.garantia || '90 dias'}</span>
                 </div>
-                <h3 class="font-bold text-slate-800 text-sm mt-1.5">${s.descricao}</h3>
-                <p class="text-xs text-slate-500 mt-0.5">
-                  Cliente: <strong class="text-slate-700">${s.cliente || 'Não informado'}</strong>
-                  ${s.senhaAparelho ? ` • Senha: <span class="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">${s.senhaAparelho}</span>` : ''}
+                <h3 class="font-bold text-slate-800 dark:text-white text-sm mt-1.5">${s.descricao}</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Cliente: <strong class="text-slate-700 dark:text-slate-200">${s.cliente || 'Não informado'}</strong>
+                  ${s.senhaAparelho ? ` • Senha: <span class="font-mono bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-700 dark:text-slate-200">${s.senhaAparelho}</span>` : ''}
                 </p>
               </div>
               <div class="text-right">
                 <span class="text-[11px] text-slate-400 block">Lucro</span>
-                <strong class="text-sm font-bold ${s.lucro >= 0 ? 'text-purple-700' : 'text-rose-600'}">${formatarMoeda(s.lucro)}</strong>
+                <strong class="text-sm font-bold ${lucroItem >= 0 ? 'text-purple-700 dark:text-purple-300' : 'text-rose-600'}">${formatarMoeda(lucroItem)}</strong>
               </div>
             </div>
 
-            <div class="pt-2.5 border-t border-slate-100 flex flex-wrap justify-between items-center gap-2">
+            <div class="pt-2.5 border-t border-slate-100 dark:border-slate-800 flex flex-wrap justify-between items-center gap-2">
               <div class="flex gap-3 text-xs">
-                <span class="text-slate-500">Total: <strong class="text-slate-800">${formatarMoeda(s.valorCobrado)}</strong></span>
-                <span class="text-slate-500">Peça: <strong class="text-rose-600">${formatarMoeda(s.custoPeca)}</strong></span>
+                <span class="text-slate-500 dark:text-slate-400">Total: <strong class="text-slate-800 dark:text-slate-100">${formatarMoeda(s.valorCobrado)}</strong></span>
+                <span class="text-slate-500 dark:text-slate-400">Peça: <strong class="text-rose-600 dark:text-rose-400">${formatarMoeda(s.custoPeca)}</strong></span>
               </div>
               <div class="flex items-center gap-2">
-                <button onclick="abrirModalOS(${s.id})" class="bg-purple-700 hover:bg-purple-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
-                  📄 Ordem de Serviço
+                <button type="button" onclick="abrirModalOS(${s.id})" class="bg-purple-700 hover:bg-purple-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
+                  📄 Ordem de Serviço (A4)
                 </button>
-                <button onclick="excluirServico(${s.id})" class="text-xs text-slate-400 hover:text-rose-600 px-1.5 py-1 transition">
+                <button type="button" onclick="excluirServico(${s.id})" class="text-xs text-slate-400 hover:text-rose-600 px-1.5 py-1 transition">
                   Excluir
                 </button>
               </div>
@@ -1120,81 +1393,75 @@
       }).join('');
     }
 
+    // --- Folha Única Padrão A4 (Sem Duplicar Folha) ---
     function gerarHTMLOrdemServico(s, isA4Real = false) {
-      const dataFormatada = s.data.split('-').reverse().join('/');
+      const dataFormatada = (s.data || '').split('-').reverse().join('/');
       const numOS = s.numeroOS || '001';
-      const termoFormatado = configLoja.termoGarantia.replace(/\n/g, '<br>');
-
+      const termoFormatado = (configLoja.termoGarantia || configPadrao.termoGarantia).replace(/\n/g, '<br>');
       const temPadrao = s.padraoDesenhado && s.padraoDesenhado.length > 0;
-      const svgPadrao = temPadrao ? gerarSVGPadrao(s.padraoDesenhado, isA4Real ? 72 : 56) : '';
-
-      const montarVia = (tituloVia) => `
-        <div style="border: 1.5px solid #111; border-radius: 6px; padding: ${isA4Real ? '16px 20px' : '11px'}; background: #fff;">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1.5px solid #111; padding-bottom: 8px; margin-bottom: 10px;">
-            <div>
-              <div style="font-size: ${isA4Real ? '17px' : '12px'}; font-weight: 800; letter-spacing: 0.5px; color: #000;">${configLoja.nomeLoja}</div>
-              <div style="font-size: ${isA4Real ? '11px' : '9px'}; color: #333; margin-top: 2px;">Tel/WhatsApp: ${configLoja.telefoneLoja}</div>
-              <div style="font-size: ${isA4Real ? '10px' : '8.5px'}; color: #555;">${configLoja.infoExtra}</div>
-            </div>
-            <div style="text-align: right;">
-              <div style="font-size: ${isA4Real ? '13px' : '10px'}; font-weight: 800; background: #111; color: #fff; padding: 4px 9px; border-radius: 4px;">ORDEM DE SERVIÇO Nº ${numOS}</div>
-              <div style="font-size: ${isA4Real ? '10.5px' : '8.5px'}; font-weight: 600; margin-top: 4px; color: #333;">Data: ${dataFormatada} • ${tituloVia}</div>
-            </div>
-          </div>
-
-          <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: ${isA4Real ? '11.5px' : '9.5px'};">
-            <tr>
-              <td style="border: 1px solid #ccc; padding: 5px 8px; width: 60%;"><strong>Cliente:</strong> ${s.cliente || 'Consumidor'}</td>
-              <td style="border: 1px solid #ccc; padding: 5px 8px; width: 40%;"><strong>Telefone:</strong> ${s.telefoneCliente || '—'}</td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid #ccc; padding: 5px 8px;"><strong>Aparelho / Serviço:</strong> ${s.descricao}</td>
-              <td style="border: 1px solid #ccc; padding: 5px 8px;">
-                <div style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
-                  <div>
-                    <strong>Senha:</strong> ${s.senhaAparelho || '—'}
-                  </div>
-                  ${svgPadrao}
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid #ccc; padding: 5px 8px;"><strong>Prazo de Garantia:</strong> <span style="font-weight: 700;">${s.garantia || '90 dias'}</span></td>
-              <td style="border: 1px solid #ccc; padding: 5px 8px;"><strong>Valor Total:</strong> <span style="font-size: ${isA4Real ? '13px' : '10.5px'}; font-weight: 800;">${formatarMoeda(s.valorCobrado)}</span></td>
-            </tr>
-            ${s.observacoes ? `
-            <tr>
-              <td colspan="2" style="border: 1px solid #ccc; padding: 5px 8px;"><strong>Observações:</strong> ${s.observacoes}</td>
-            </tr>` : ''}
-          </table>
-
-          <div style="background: #f9fafb; border: 1px solid #d1d5db; border-radius: 4px; padding: 7px 10px; margin-bottom: 12px;">
-            <div style="font-size: ${isA4Real ? '10.5px' : '8.5px'}; font-weight: 800; text-transform: uppercase; margin-bottom: 3px; color: #111;">Termo de Garantia e Condições de Serviço:</div>
-            <div style="font-size: ${isA4Real ? '9.5px' : '7.8px'}; line-height: 1.35; color: #222;">
-              ${termoFormatado}
-            </div>
-          </div>
-
-          <div style="display: flex; justify-content: space-between; gap: 30px; margin-top: ${isA4Real ? '18px' : '10px'}; font-size: ${isA4Real ? '10.5px' : '8.5px'}; text-align: center;">
-            <div style="flex: 1;">
-              <div style="border-top: 1px solid #111; padding-top: 3px; font-weight: 600;">${configLoja.nomeLoja}</div>
-              <div style="color: #555; font-size: ${isA4Real ? '9.5px' : '7.5px'};">Assinatura do Técnico / Responsável</div>
-            </div>
-            <div style="flex: 1;">
-              <div style="border-top: 1px solid #111; padding-top: 3px; font-weight: 600;">${s.cliente || 'Assinatura do Cliente'}</div>
-              <div style="color: #555; font-size: ${isA4Real ? '9.5px' : '7.5px'};">De acordo com o serviço e termo de garantia</div>
-            </div>
-          </div>
-        </div>
-      `;
+      const svgPadrao = temPadrao ? gerarSVGPadrao(s.padraoDesenhado, isA4Real ? 92 : 70) : '';
 
       return `
-        <div style="display: flex; flex-direction: column; justify-content: space-between; height: 100%; gap: ${isA4Real ? '14px' : '10px'};">
-          ${montarVia('1ª VIA - CLIENTE')}
-          <div style="border-top: 1px dashed #888; text-align: center; position: relative; margin: 2px 0;">
-            <span style="background: #fff; padding: 0 8px; font-size: 9px; color: #666; position: relative; top: -7px;">✂️ Recorte aqui</span>
+        <div style="border: 2px solid #111; border-radius: 8px; padding: ${isA4Real ? '28px 32px' : '14px'}; background: #fff; color: #000; height: 100%; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box;">
+          <div>
+            <!-- Cabeçalho da Loja -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #111; padding-bottom: 14px; margin-bottom: 18px;">
+              <div>
+                <div style="font-size: ${isA4Real ? '22px' : '14px'}; font-weight: 800; letter-spacing: 0.4px; color: #000;">${configLoja.nomeLoja}</div>
+                <div style="font-size: ${isA4Real ? '13px' : '10px'}; color: #222; margin-top: 4px;">Tel/WhatsApp: ${configLoja.telefoneLoja}</div>
+                <div style="font-size: ${isA4Real ? '12px' : '9px'}; color: #444; margin-top: 2px;">${configLoja.infoExtra}</div>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-size: ${isA4Real ? '15px' : '10px'}; font-weight: 800; background: #111; color: #fff; padding: 6px 12px; border-radius: 5px;">ORDEM DE SERVIÇO Nº ${numOS}</div>
+                <div style="font-size: ${isA4Real ? '12px' : '9px'}; font-weight: 600; margin-top: 6px; color: #222;">Data: ${dataFormatada}</div>
+              </div>
+            </div>
+
+            <!-- Dados do Cliente, Aparelho, Garantia e Valor -->
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 18px; font-size: ${isA4Real ? '13.5px' : '10px'};">
+              <tr>
+                <td style="border: 1px solid #888; padding: ${isA4Real ? '10px 12px' : '6px 8px'}; width: 58%;"><strong>Cliente:</strong> ${s.cliente || 'Consumidor'}</td>
+                <td style="border: 1px solid #888; padding: ${isA4Real ? '10px 12px' : '6px 8px'}; width: 42%;"><strong>Telefone:</strong> ${s.telefoneCliente || '—'}</td>
+              </tr>
+              <tr>
+                <td style="border: 1px solid #888; padding: ${isA4Real ? '10px 12px' : '6px 8px'};"><strong>Aparelho / Serviço:</strong> ${s.descricao}</td>
+                <td style="border: 1px solid #888; padding: ${isA4Real ? '10px 12px' : '6px 8px'};">
+                  <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                    <div><strong>Senha:</strong> ${s.senhaAparelho || '—'}</div>
+                    ${svgPadrao}
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td style="border: 1px solid #888; padding: ${isA4Real ? '10px 12px' : '6px 8px'};"><strong>Tempo de Garantia:</strong> <span style="font-weight: 800;">${s.garantia || '90 dias'}</span></td>
+                <td style="border: 1px solid #888; padding: ${isA4Real ? '10px 12px' : '6px 8px'};"><strong>Valor do Serviço:</strong> <span style="font-size: ${isA4Real ? '16px' : '11px'}; font-weight: 800;">${formatarMoeda(s.valorCobrado)}</span></td>
+              </tr>
+              ${s.observacoes ? `
+              <tr>
+                <td colspan="2" style="border: 1px solid #888; padding: ${isA4Real ? '10px 12px' : '6px 8px'};"><strong>Observações:</strong> ${s.observacoes}</td>
+              </tr>` : ''}
+            </table>
+
+            <!-- Termo de Garantia -->
+            <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: ${isA4Real ? '14px 16px' : '9px 10px'};">
+              <div style="font-size: ${isA4Real ? '12.5px' : '9.5px'}; font-weight: 800; text-transform: uppercase; margin-bottom: 6px; color: #000;">Termo de Garantia e Condições:</div>
+              <div style="font-size: ${isA4Real ? '12px' : '8.5px'}; line-height: 1.5; color: #111;">
+                ${termoFormatado}
+              </div>
+            </div>
           </div>
-          ${montarVia('2ª VIA - ASSISTÊNCIA TÉCNICA')}
+
+          <!-- Assinaturas -->
+          <div style="display: flex; justify-content: space-between; gap: 36px; margin-top: ${isA4Real ? '36px' : '18px'}; font-size: ${isA4Real ? '12px' : '9px'}; text-align: center;">
+            <div style="flex: 1;">
+              <div style="border-top: 1.5px solid #111; padding-top: 6px; font-weight: 700;">${configLoja.nomeLoja}</div>
+              <div style="color: #444; font-size: ${isA4Real ? '11px' : '8px'}; margin-top: 2px;">Assinatura do Técnico / Responsável</div>
+            </div>
+            <div style="flex: 1;">
+              <div style="border-top: 1.5px solid #111; padding-top: 6px; font-weight: 700;">${s.cliente || 'Assinatura do Cliente'}</div>
+              <div style="color: #444; font-size: ${isA4Real ? '11px' : '8px'}; margin-top: 2px;">Cliente / Responsável pelo Aparelho</div>
+            </div>
+          </div>
         </div>
       `;
     }
@@ -1219,15 +1486,18 @@
       if (!servicoSelecionadoOS) return;
       const btn = document.getElementById('btnBaixarA4');
       const textoOriginal = btn.innerHTML;
-      btn.innerHTML = '<span>⏳ Gerando Folha A4...</span>';
+      btn.innerHTML = '<span>⏳ Salvando A4...</span>';
       btn.disabled = true;
 
       try {
+        document.getElementById('folhaA4Real').innerHTML = gerarHTMLOrdemServico(servicoSelecionadoOS, true);
         const elementoA4 = document.getElementById('folhaA4Real');
         const canvas = await html2canvas(elementoA4, {
           scale: 2,
           useCORS: true,
-          backgroundColor: '#ffffff'
+          backgroundColor: '#ffffff',
+          width: 794,
+          height: 1123
         });
 
         const dataUrl = canvas.toDataURL('image/png', 1.0);
@@ -1239,7 +1509,7 @@
         link.click();
         document.body.removeChild(link);
       } catch (err) {
-        alert('Erro ao gerar imagem da O.S. Tente novamente.');
+        alert('Não foi possível salvar a imagem A4. Tente usar a opção Imprimir.');
       } finally {
         btn.innerHTML = textoOriginal;
         btn.disabled = false;
@@ -1247,19 +1517,17 @@
     }
 
     function imprimirOrdemServico() {
+      if (!servicoSelecionadoOS) return;
+      document.getElementById('folhaA4Real').innerHTML = gerarHTMLOrdemServico(servicoSelecionadoOS, true);
       window.print();
     }
 
-    function abrirConfigLoja() {
-      document.getElementById('cfgNomeLoja').value = configLoja.nomeLoja;
-      document.getElementById('cfgTelefoneLoja').value = configLoja.telefoneLoja;
-      document.getElementById('cfgInfoExtra').value = configLoja.infoExtra;
-      document.getElementById('cfgTermoGarantia').value = configLoja.termoGarantia;
-      document.getElementById('modalConfig').classList.remove('hidden');
-    }
-
-    function fecharConfigLoja() {
-      document.getElementById('modalConfig').classList.add('hidden');
+    // --- Configurações da Loja & Backup ---
+    function carregarCamposConfiguracao() {
+      document.getElementById('cfgNomeLoja').value = configLoja.nomeLoja || configPadrao.nomeLoja;
+      document.getElementById('cfgTelefoneLoja').value = configLoja.telefoneLoja || '';
+      document.getElementById('cfgInfoExtra').value = configLoja.infoExtra || '';
+      document.getElementById('cfgTermoGarantia').value = configLoja.termoGarantia || configPadrao.termoGarantia;
     }
 
     function salvarConfigLoja() {
@@ -1270,19 +1538,112 @@
         termoGarantia: document.getElementById('cfgTermoGarantia').value.trim() || configPadrao.termoGarantia
       };
       localStorage.setItem('assistencia_config_loja', JSON.stringify(configLoja));
-      fecharConfigLoja();
-      alert('Dados da loja e termo de garantia atualizados!');
+      alert('Dados da assistência e termo de garantia salvos!');
     }
 
     function exportarBackup() {
-      const dados = JSON.stringify({ configLoja, metaMensal, lucroMedioManual, clientes, servicos }, null, 2);
-      const blob = new Blob([dados], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `backup-mileniun-smart-${new Date().toISOString().split('T')[0]}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
+      try {
+        const pacoteBackup = {
+          versao: 2,
+          dataExportacao: new Date().toISOString(),
+          configLoja,
+          metaMensal,
+          lucroMedioManual,
+          temaEscuro,
+          clientes,
+          servicos
+        };
+        const jsonString = JSON.stringify(pacoteBackup, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const dataHoje = new Date().toISOString().split('T')[0];
+        a.href = url;
+        a.download = `backup-mileniun-smart-${dataHoje}.json`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, 150);
+        document.getElementById('statusBackup').innerText = `Backup exportado em ${new Date().toLocaleTimeString('pt-BR')}.`;
+      } catch (e) {
+        alert('Erro ao exportar backup.');
+      }
+    }
+
+    function importarBackup(event) {
+      const arquivo = event.target.files && event.target.files[0];
+      if (!arquivo) return;
+
+      const leitor = new FileReader();
+      leitor.onload = (e) => {
+        try {
+          const dados = JSON.parse(e.target.result);
+          if (!dados || (!Array.isArray(dados.servicos) && !Array.isArray(dados.clientes))) {
+            throw new Error('Arquivo inválido');
+          }
+
+          if (Array.isArray(dados.servicos)) {
+            servicos = dados.servicos;
+            localStorage.setItem('assistencia_servicos', JSON.stringify(servicos));
+          }
+          if (Array.isArray(dados.clientes)) {
+            clientes = dados.clientes;
+            localStorage.setItem('assistencia_clientes', JSON.stringify(clientes));
+          }
+          if (dados.configLoja && typeof dados.configLoja === 'object') {
+            configLoja = { ...configPadrao, ...dados.configLoja };
+            localStorage.setItem('assistencia_config_loja', JSON.stringify(configLoja));
+          }
+          if (typeof dados.metaMensal === 'number') {
+            metaMensal = dados.metaMensal;
+            localStorage.setItem('assistencia_meta', String(metaMensal));
+            document.getElementById('inputMeta').value = metaMensal;
+          }
+          if (typeof dados.lucroMedioManual === 'string') {
+            lucroMedioManual = dados.lucroMedioManual;
+            localStorage.setItem('assistencia_lucro_medio_manual', lucroMedioManual);
+            document.getElementById('inputLucroMedio').value = lucroMedioManual;
+          }
+          if (typeof dados.temaEscuro === 'boolean') {
+            temaEscuro = dados.temaEscuro;
+            aplicarTema();
+          }
+
+          sincronizarClientesComServicos();
+          atualizarSelectClientes();
+          carregarCamposConfiguracao();
+          atualizarTela();
+          renderizarClientes();
+          renderizarAnalise();
+
+          document.getElementById('statusBackup').innerText = `Backup restaurado com sucesso (${servicos.length} serviços, ${clientes.length} clientes).`;
+          alert('Backup importado e restaurado com sucesso!');
+        } catch (err) {
+          alert('Arquivo de backup inválido ou corrompido.');
+        } finally {
+          event.target.value = '';
+        }
+      };
+      leitor.readAsText(arquivo);
+    }
+
+    function sairDoAplicativo() {
+      if (confirm('Deseja realmente sair do aplicativo?')) {
+        window.close();
+        document.body.innerHTML = `
+          <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;font-family:Inter,sans-serif;background:#0f172a;color:#f8fafc;">
+            <div style="max-width:340px;">
+              <h2 style="font-size:20px;font-weight:800;margin-bottom:8px;">Sessão Encerrada</h2>
+              <p style="font-size:13px;color:#94a3b8;margin-bottom:20px;">Você saiu do aplicativo Mileniun Smart. Você pode fechar esta aba ou reabrir o app quando quiser.</p>
+              <button onclick="window.location.reload()" style="background:#7e22ce;color:#fff;border:none;padding:12px 20px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer;">
+                Reabrir Aplicativo
+              </button>
+            </div>
+          </div>
+        `;
+      }
     }
 
     inicializar();
