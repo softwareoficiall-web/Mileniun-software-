@@ -2,20 +2,51 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Mileniun Smart - Gestão & Ordem de Serviço</title>
+
+  <!-- Modo App Nativo / Tela Cheia (Android, iOS e PWA) -->
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Mileniun Smart" />
+  <meta name="application-name" content="Mileniun Smart" />
+  <meta name="theme-color" content="#6d28d9" />
+
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    body {
+    :root {
+      --sat: env(safe-area-inset-top, 0px);
+      --sab: env(safe-area-inset-bottom, 0px);
+    }
+
+    html, body {
       font-family: 'Inter', sans-serif;
       background-color: #f8fafc;
       color: #0f172a;
       -webkit-tap-highlight-color: transparent;
+      overscroll-behavior-y: none;
+      user-select: none;
+      -webkit-user-select: none;
     }
+
+    input, textarea, select {
+      user-select: text;
+      -webkit-user-select: text;
+    }
+
     .card-shadow {
       box-shadow: 0 4px 20px -2px rgba(88, 28, 135, 0.06);
+    }
+
+    .header-nativo {
+      padding-top: calc(20px + var(--sat));
+    }
+
+    .main-nativo {
+      padding-bottom: calc(24px + var(--sab));
     }
 
     /* Estilos da Folha A4 (Oculta na tela normal, renderizada para captura/impressão) */
@@ -27,8 +58,8 @@
     }
 
     .folha-a4 {
-      width: 794px; /* 210mm em 96dpi */
-      min-height: 1123px; /* 297mm em 96dpi */
+      width: 794px;
+      min-height: 1123px;
       background: #ffffff;
       color: #000000;
       padding: 36px 42px;
@@ -60,10 +91,10 @@
     }
   </style>
 </head>
-<body class="pb-14">
+<body class="main-nativo">
 
   <!-- Cabeçalho -->
-  <header class="bg-purple-700 text-white pt-6 pb-8 px-4 rounded-b-3xl shadow-md">
+  <header class="bg-purple-700 text-white header-nativo pb-8 px-4 rounded-b-3xl shadow-md">
     <div class="max-w-3xl mx-auto flex justify-between items-center">
       <div>
         <h1 class="text-xl font-bold tracking-tight">Mileniun Smart</h1>
@@ -222,12 +253,10 @@
             </div>
           </div>
 
-          <!-- Campo Senha Texto/PIN -->
           <div id="boxSenhaTexto">
             <input type="text" id="senhaAparelho" placeholder="Digite o PIN, senha numérica ou observação..." class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-purple-600" />
           </div>
 
-          <!-- Grade de Bolinhas para Desenhar Padrão -->
           <div id="boxSenhaPadrao" class="hidden flex flex-col items-center py-2">
             <p class="text-[11px] text-slate-500 mb-2">Arraste ou clique nas bolinhas na ordem do padrão:</p>
             <canvas id="canvasPadrao" width="210" height="210" class="bg-white border-2 border-purple-200 rounded-2xl touch-none shadow-xs cursor-crosshair"></canvas>
@@ -365,7 +394,6 @@
     let lucroMedioManual = localStorage.getItem('assistencia_lucro_medio_manual') || '';
     let servicoSelecionadoOS = null;
 
-    // Controle do Padrão de Bolinhas (3x3)
     let tipoSenhaAtual = 'texto';
     let sequenciaPadrao = [];
     let desenhandoPadrao = false;
@@ -389,7 +417,6 @@
     function desenharGradePadrao(pontoAtual = null) {
       ctxPadrao.clearRect(0, 0, canvasPadrao.width, canvasPadrao.height);
 
-      // Linhas conectando a sequência
       if (sequenciaPadrao.length > 0) {
         ctxPadrao.beginPath();
         sequenciaPadrao.forEach((num, i) => {
@@ -407,7 +434,6 @@
         ctxPadrao.stroke();
       }
 
-      // Bolinhas da grade
       ponteirosGrade.forEach(p => {
         const selecionada = sequenciaPadrao.includes(p.num);
         ctxPadrao.beginPath();
@@ -418,7 +444,6 @@
         ctxPadrao.strokeStyle = selecionada ? '#581c87' : '#94a3b8';
         ctxPadrao.stroke();
 
-        // Ponto central
         ctxPadrao.beginPath();
         ctxPadrao.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
         ctxPadrao.fillStyle = selecionada ? '#ffffff' : '#64748b';
@@ -509,7 +534,6 @@
       }
     }
 
-    // Gera SVG do padrão de bolinhas para exibir na O.S. e na imagem A4
     function gerarSVGPadrao(sequencia, tamanho = 76) {
       if (!sequencia || sequencia.length === 0) return '';
       const cols = [15, 38, 61];
